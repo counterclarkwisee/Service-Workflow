@@ -1,0 +1,1116 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        margin: 0;
+        background: #f4f4f6;
+        color: #1a1a1a;
+        font-size: 13px;
+        min-height: 100vh;
+      }
+      main {
+        padding: 20px 28px;
+      }
+
+      .filters {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+        background: #fff;
+        padding: 14px 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border-top: 3px solid #eb0a1e;
+      }
+      .filters-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        justify-self: start;
+      }
+      .filters-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        justify-self: end;
+      }
+      .filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .filter label {
+        font-weight: 600;
+        color: #3c3c3c;
+        font-size: 12px;
+      }
+      .filter input,
+      .filter select {
+        padding: 8px 12px;
+        border: 1px solid #d9d9dc;
+        border-radius: 8px;
+        font: 13px Inter;
+        color: #1a1a1a;
+        background: #fff;
+        outline: none;
+        min-width: 140px;
+      }
+      .filter input:focus,
+      .filter select:focus {
+        border-color: #eb0a1e;
+      }
+      .datenav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .datenav button {
+        width: 32px;
+        height: 34px;
+        border: 1px solid #d9d9dc;
+        background: #fff;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        color: #3c3c3c;
+        padding: 0;
+      }
+      .datenav button:hover {
+        background: #fdecee;
+        color: #eb0a1e;
+        border-color: #eb0a1e;
+      }
+      .datechip {
+        padding: 6px 12px;
+        background: #fdecee;
+        color: #eb0a1e;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .datechip.future {
+        background: #fff4e0;
+        color: #a85d00;
+      }
+      .datechip.past {
+        background: #ececef;
+        color: #6b6b70;
+      }
+      .btn {
+        padding: 8px 18px;
+        border-radius: 8px;
+        font: 600 13px Inter;
+        cursor: pointer;
+        border: 1px solid #eb0a1e;
+        background: #fff;
+        color: #eb0a1e;
+      }
+      .btn:hover {
+        background: #fdecee;
+      }
+      .btn.primary {
+        background: #eb0a1e;
+        color: #fff;
+        border-color: #eb0a1e;
+      }
+      .btn.primary:hover {
+        background: #c00819;
+        border-color: #c00819;
+      }
+      .btn.ghost {
+        border-color: #d9d9dc;
+        color: #3c3c3c;
+      }
+      .btn.ghost:hover {
+        background: #fdecee;
+        color: #eb0a1e;
+        border-color: #eb0a1e;
+      }
+
+      .viewtoggle {
+        display: flex;
+        background: #ececef;
+        border-radius: 10px;
+        padding: 4px;
+        gap: 2px;
+      }
+      .viewtoggle button {
+        padding: 8px 18px;
+        border: 0;
+        background: transparent;
+        font: 600 13px Inter;
+        color: #3c3c3c;
+        border-radius: 7px;
+        cursor: pointer;
+      }
+      .viewtoggle button.active {
+        background: #fff;
+        color: #1a1a1a;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .split {
+        display: grid;
+        gap: 16px;
+      }
+      .split.both {
+        grid-template-columns: 1fr 1fr;
+      }
+      .split.table-only,
+      .split.grid-only {
+        grid-template-columns: 1fr;
+      }
+      .pane {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 600px;
+      }
+      .pane-head {
+        padding: 14px 18px;
+        border-bottom: 1px solid #ececef;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .pane-head h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1a1a;
+      }
+      .pane-head .count {
+        background: #fdecee;
+        color: #eb0a1e;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 10px;
+      }
+      .pane-body {
+        flex: 1;
+        overflow: auto;
+      }
+
+      .tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+      }
+      .tbl thead th {
+        background: #f4f4f6;
+        color: #6b6b70;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        text-align: left;
+        padding: 11px 14px;
+        border-bottom: 1px solid #ececef;
+        position: sticky;
+        top: 0;
+      }
+      .tbl tbody td {
+        padding: 13px 14px;
+        border-bottom: 1px solid #ececef;
+        color: #1a1a1a;
+        vertical-align: middle;
+      }
+      .tbl tbody tr:hover {
+        background: #fafafb;
+        cursor: pointer;
+      }
+      .tbl .name {
+        font-weight: 600;
+      }
+      .tbl .sub {
+        color: #6b6b70;
+        font-size: 11px;
+        margin-top: 2px;
+      }
+      .empty {
+        padding: 60px 20px;
+        text-align: center;
+        color: #9a9aa0;
+      }
+      .empty .big {
+        font-size: 32px;
+        margin-bottom: 8px;
+        opacity: 0.5;
+      }
+      .badge {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-left: 3px solid;
+      }
+      .b-scheduled {
+        background: #ececef;
+        border-color: #6b6b70;
+        color: #3c3c3c;
+      }
+      .b-in_service {
+        background: #fff4e0;
+        border-color: #f59e0b;
+        color: #92400e;
+      }
+      .b-awaiting_parts {
+        background: #fdecee;
+        border-color: #eb0a1e;
+        color: #a30714;
+      }
+      .b-done {
+        background: #e6f4ea;
+        border-color: #1e8e3e;
+        color: #0f5c26;
+      }
+
+      .grid-wrap {
+        overflow: auto;
+        height: 100%;
+      }
+      .gtbl {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+      }
+      .gtbl th,
+      .gtbl td {
+        border-right: 1px solid #ececef;
+        border-bottom: 1px solid #ececef;
+        padding: 0;
+        height: 58px;
+        min-width: 54px;
+        text-align: center;
+        vertical-align: middle;
+      }
+      .gtbl thead th {
+        background: #f4f4f6;
+        font-weight: 600;
+        color: #6b6b70;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 10px 4px;
+        height: auto;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+      .gtbl th.bay,
+      .gtbl td.bay {
+        text-align: left;
+        padding-left: 14px;
+        min-width: 130px;
+        background: #f4f4f6;
+        font-weight: 600;
+        color: #1a1a1a;
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        font-size: 12px;
+      }
+      .gtbl thead th.bay {
+        z-index: 3;
+      }
+      .gtbl th.now {
+        color: #eb0a1e;
+        font-weight: 700;
+      }
+      .gtbl td.now {
+        background: rgba(235, 10, 30, 0.04);
+      }
+      .gtbl td.free {
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .gtbl td.free:hover {
+        background: #fdecee;
+      }
+      .gtbl td.free:hover::after {
+        content: "+";
+        color: #eb0a1e;
+        font-size: 20px;
+        font-weight: 300;
+      }
+      .block {
+        margin: 4px;
+        height: 46px;
+        border-radius: 7px;
+        padding: 6px 9px;
+        text-align: left;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+        border-left: 3px solid;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+      }
+      .block:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.14);
+        transform: translateY(-1px);
+      }
+      .block .name {
+        font-weight: 600;
+        color: #1a1a1a;
+        font-size: 11.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .block .meta {
+        font-size: 10px;
+        color: #6b6b70;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+      }
+      .s-scheduled {
+        background: #ececef;
+        border-color: #6b6b70;
+      }
+      .s-in_service {
+        background: #fff4e0;
+        border-color: #f59e0b;
+      }
+      .s-awaiting_parts {
+        background: #fdecee;
+        border-color: #eb0a1e;
+      }
+      .s-done {
+        background: #e6f4ea;
+        border-color: #1e8e3e;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(26, 26, 26, 0.5);
+        display: none;
+        z-index: 10;
+      }
+      .modal.show {
+        display: block;
+      }
+      .drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 540px;
+        background: #fff;
+        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.18);
+        overflow-y: auto;
+      }
+      .dhead {
+        padding: 22px 28px;
+        border-bottom: 1px solid #ececef;
+        display: flex;
+        align-items: flex-start;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .dhead h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .dhead .sub {
+        color: #b8b8bc;
+        font-size: 12px;
+        margin-top: 3px;
+      }
+      .close {
+        margin-left: auto;
+        background: none;
+        border: 0;
+        font-size: 22px;
+        color: #b8b8bc;
+        cursor: pointer;
+      }
+      .close:hover {
+        color: #fff;
+      }
+      .dbody {
+        padding: 20px 28px;
+      }
+      .section {
+        margin-bottom: 22px;
+      }
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #1a1a1a;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #eb0a1e;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .field {
+        margin-bottom: 10px;
+      }
+      .field label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        color: #6b6b70;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .field input,
+      .field select,
+      .field textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d9d9dc;
+        border-radius: 8px;
+        font: 13px Inter;
+        color: #1a1a1a;
+        outline: none;
+        background: #fff;
+      }
+      .field input:focus,
+      .field select:focus,
+      .field textarea:focus {
+        border-color: #eb0a1e;
+      }
+      .field textarea {
+        resize: vertical;
+        min-height: 70px;
+        font-family: Inter;
+      }
+      .timerange {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .timerange input[type="time"] {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #d9d9dc;
+        border-radius: 8px;
+        font: 13px Inter;
+        color: #1a1a1a;
+        outline: none;
+        background: #fff;
+      }
+      .timerange input[type="time"]:focus {
+        border-color: #eb0a1e;
+      }
+      .timerange .dash {
+        color: #6b6b70;
+        font-weight: 600;
+      }
+      .timerange .durpreview {
+        padding: 6px 10px;
+        background: #fdecee;
+        color: #eb0a1e;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 11px;
+        min-width: 54px;
+        text-align: center;
+      }
+      .pillgroup {
+        display: flex;
+        gap: 8px;
+      }
+      .pillbtn {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #d9d9dc;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        font: 600 13px Inter;
+        color: #6b6b70;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .pillbtn .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #d9d9dc;
+      }
+      .pillbtn.on {
+        border-color: #eb0a1e;
+        background: #fdecee;
+        color: #eb0a1e;
+      }
+      .pillbtn.on .dot {
+        border-color: #eb0a1e;
+        background: #eb0a1e;
+        box-shadow: inset 0 0 0 3px #fff;
+      }
+      .optional {
+        font-size: 10px;
+        font-weight: 500;
+        color: #9a9aa0;
+        text-transform: none;
+        letter-spacing: 0;
+        margin-left: 6px;
+      }
+      .dactions {
+        padding: 16px 28px;
+        border-top: 1px solid #ececef;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #f4f4f6;
+        position: sticky;
+        bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="filters">
+        <div class="filters-left">
+          <div class="datenav">
+            <button onclick="shiftDate(-1)" title="Previous day">‹</button>
+            <input type="date" id="f_date" />
+            <button onclick="shiftDate(1)" title="Next day">›</button>
+          </div>
+          <button class="btn ghost" onclick="goToday()">Today</button>
+          <span class="datechip" id="dateChip">Today</span>
+          <div class="filter">
+            <label>Status</label
+            ><select id="f_status">
+              <option value="">All</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="in_service">In Service</option>
+              <option value="awaiting_parts">Awaiting Parts</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="viewtoggle">
+          <button id="v_table" onclick="setView('table')">Table</button>
+          <button id="v_both" class="active" onclick="setView('both')">
+            Both
+          </button>
+          <button id="v_grid" onclick="setView('grid')">Bay Grid</button>
+        </div>
+
+        <div class="filters-right">
+          <button class="btn" onclick="reset()">↻ Reset</button>
+        </div>
+      </div>
+
+      <div class="split both" id="split">
+        <div class="pane" id="tablePane">
+          <div class="pane-head">
+            <h3>📋 Appointments</h3>
+            <span class="count" id="tableCount">0</span>
+          </div>
+          <div class="pane-body">
+            <table class="tbl" id="tbl">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Customer</th>
+                  <th>Vehicle</th>
+                  <th>Service</th>
+                  <th>Bay</th>
+                  <th>Advisor</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="pane" id="gridPane">
+          <div class="pane-head">
+            <h3>🔧 Bay Schedule</h3>
+            <span class="count" id="bayCount">0 bays</span>
+          </div>
+          <div class="pane-body"><div class="grid-wrap" id="grid"></div></div>
+        </div>
+      </div>
+    </main>
+
+    <div class="modal" id="modal">
+      <div class="drawer">
+        <div class="dhead">
+          <div>
+            <h2>New Appointment</h2>
+            <div class="sub" id="slotInfo">Toyota Service Management</div>
+          </div>
+          <button class="close" onclick="closeModal()">×</button>
+        </div>
+        <div class="dbody">
+          <div class="section">
+            <div class="section-title">👤 Customer Info</div>
+            <div class="row2">
+              <div class="field">
+                <label>Last Name</label><input id="f_lastName" />
+              </div>
+              <div class="field">
+                <label>First Name</label><input id="f_firstName" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Contact Number</label><input id="f_contact" />
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">🚗 Vehicle Info</div>
+            <div class="row2">
+              <div class="field">
+                <label>Plate No.</label><input id="f_plate" />
+              </div>
+              <div class="field">
+                <label>CS No.</label><input id="f_csNo" />
+              </div>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label>Vehicle Model</label><input id="f_model" />
+              </div>
+              <div class="field"><label>Year</label><input id="f_year" /></div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">🔧 Service Details</div>
+            <div class="field">
+              <label>Job Type</label
+              ><select id="f_type">
+                <option>PMS 10K</option>
+                <option>PMS 20K</option>
+                <option>PMS 40K</option>
+                <option>General Repair</option>
+                <option>Engine Maintenance</option>
+                <option>Body Paint</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Source</label>
+              <div class="pillgroup">
+                <button
+                  type="button"
+                  class="pillbtn on"
+                  id="src_in"
+                  onclick="setSource('Inbound')"
+                >
+                  <span class="dot"></span>Inbound
+                </button>
+                <button
+                  type="button"
+                  class="pillbtn"
+                  id="src_out"
+                  onclick="setSource('Outbound')"
+                >
+                  <span class="dot"></span>Outbound
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Service Advisor</label
+              ><select id="f_advisor"></select>
+            </div>
+            <div class="field">
+              <label>Time</label>
+              <div class="timerange">
+                <input type="time" id="f_start" step="900" />
+                <span class="dash">–</span>
+                <input type="time" id="f_end" step="900" />
+                <span class="durpreview" id="f_durPreview">1h</span>
+              </div>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">
+              🧑‍💼 Assignee Info<span class="optional">(optional)</span>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label>Last Name</label><input id="f_assLast" />
+              </div>
+              <div class="field">
+                <label>First Name</label><input id="f_assFirst" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Contact Number</label><input id="f_assContact" />
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-title">📝 Remarks</div>
+            <div class="field"><textarea id="f_remarks"></textarea></div>
+          </div>
+        </div>
+        <div class="dactions">
+          <button class="btn" onclick="closeModal()">Cancel</button
+          ><button class="btn primary" onclick="save()">
+            Book Appointment
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SLOTS = [
+        "08:00",
+        "08:30",
+        "09:00",
+        "09:30",
+        "10:00",
+        "10:30",
+        "11:00",
+        "11:30",
+        "12:00",
+        "12:30",
+        "13:00",
+        "13:30",
+        "14:00",
+        "14:30",
+        "15:00",
+        "15:30",
+        "16:00",
+        "16:30",
+        "17:00",
+      ];
+      let STATE = null,
+        picked = null,
+        source = "Inbound",
+        view = "both";
+      const today = new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Manila",
+      });
+      document.getElementById("f_date").value = today;
+
+      function currentDate() {
+        return document.getElementById("f_date").value;
+      }
+      function shiftDate(delta) {
+        const d = new Date(currentDate());
+        d.setDate(d.getDate() + delta);
+        document.getElementById("f_date").value = d.toLocaleDateString(
+          "en-CA",
+          { timeZone: "Asia/Manila" },
+        );
+        updateDateChip();
+        refresh();
+      }
+      function goToday() {
+        document.getElementById("f_date").value = today;
+        updateDateChip();
+        refresh();
+      }
+      function updateDateChip() {
+        const d = currentDate();
+        const chip = document.getElementById("dateChip");
+        const diff = Math.round((new Date(d) - new Date(today)) / 86400000);
+        chip.className =
+          "datechip " + (diff < 0 ? "past" : diff > 0 ? "future" : "");
+        const label = new Date(d).toLocaleDateString("en-PH", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        });
+        chip.textContent =
+          diff === 0
+            ? "Today · " + label
+            : diff === 1
+              ? "Tomorrow · " + label
+              : diff === -1
+                ? "Yesterday · " + label
+                : label;
+      }
+      function setView(v) {
+        view = v;
+        const s = document.getElementById("split");
+        s.className =
+          "split " +
+          (v === "both" ? "both" : v === "table" ? "table-only" : "grid-only");
+        document.getElementById("tablePane").style.display =
+          v === "grid" ? "none" : "flex";
+        document.getElementById("gridPane").style.display =
+          v === "table" ? "none" : "flex";
+        ["table", "both", "grid"].forEach((x) =>
+          document.getElementById("v_" + x).classList.toggle("active", x === v),
+        );
+      }
+
+      function toMin(t) {
+        const [h, m] = t.split(":").map(Number);
+        return h * 60 + m;
+      }
+      function statusLabel(s) {
+        return (
+          {
+            scheduled: "Scheduled",
+            in_service: "In Service",
+            awaiting_parts: "Awaiting Parts",
+            done: "Done",
+          }[s] || s
+        );
+      }
+
+      function render(s) {
+        STATE = s;
+        const adv = document.getElementById("f_advisor");
+        adv.innerHTML =
+          '<option value="">— Select advisor —</option>' +
+          s.advisors.map((a) => `<option>${a.name}</option>`).join("");
+        document.getElementById("bayCount").textContent =
+          s.bays.length + " bays";
+        const d = currentDate();
+        const isToday = d === today;
+        const statusFilter = document.getElementById("f_status").value;
+        const dayServices = s.servicesByDate[d] || [];
+        const visible = dayServices.filter(
+          (x) => !statusFilter || x.status === statusFilter,
+        );
+
+        const sorted = [...visible].sort(
+          (a, b) => toMin(a.start) - toMin(b.start),
+        );
+        document.getElementById("tableCount").textContent = sorted.length;
+        const tbody = document.querySelector("#tbl tbody");
+        tbody.innerHTML = sorted.length
+          ? sorted
+              .map((x) => {
+                const name = `${x.lastName}, ${x.firstName || ""}`
+                  .trim()
+                  .replace(/,$/, "");
+                const bayName =
+                  s.bays.find((b) => b.id === x.bay)?.name || x.bay;
+                return `<tr><td><strong>${x.start}</strong><div class="sub">${x.dur} min</div></td><td><div class="name">${name}</div><div class="sub">${x.contact || ""}</div></td><td>${x.plate}<div class="sub">${x.model || ""} ${x.year || ""}</div></td><td>${x.type}</td><td>${bayName}</td><td>${x.advisor || "—"}</td><td><span class="badge b-${x.status}">${statusLabel(x.status)}</span></td></tr>`;
+              })
+              .join("")
+          : '<tr><td colspan="7"><div class="empty"><div class="big">📅</div>No appointments yet for this day.<br><span style="font-size:11px">Click any empty cell in the bay grid to book.</span></div></td></tr>';
+
+        const now = new Date();
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+        let h = '<table class="gtbl"><thead><tr><th class="bay">Bay</th>';
+        SLOTS.forEach((t) => {
+          const cls =
+            isToday && nowMin >= toMin(t) && nowMin < toMin(t) + 30
+              ? "now"
+              : "";
+          h += `<th class="${cls}">${t}</th>`;
+        });
+        h += "</tr></thead><tbody>";
+        s.bays.forEach((b) => {
+          h += `<tr><td class="bay">${b.name}</td>`;
+          let i = 0;
+          while (i < SLOTS.length) {
+            const slot = SLOTS[i];
+            const svc = visible.find((x) => x.bay === b.id && x.start === slot);
+            const nowCls =
+              isToday && nowMin >= toMin(slot) && nowMin < toMin(slot) + 30
+                ? " now"
+                : "";
+            if (svc) {
+              const span = Math.max(1, Math.round(svc.dur / 30));
+              const name = `${svc.lastName}, ${svc.firstName || ""}`
+                .trim()
+                .replace(/,$/, "");
+              h += `<td colspan="${span}" class="${nowCls}"><div class="block s-${svc.status}"><div class="name">${name}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
+              i += span;
+            } else {
+              h += `<td class="free${nowCls}" onclick="openModal('${b.id}','${slot}')"></td>`;
+              i++;
+            }
+          }
+          h += "</tr>";
+        });
+        h += "</tbody></table>";
+        document.getElementById("grid").innerHTML = h;
+      }
+
+      function refresh() {
+        google.script.run
+          .withSuccessHandler(render)
+          .withFailureHandler(onError)
+          .getState();
+      }
+      function reset() {
+        google.script.run
+          .withSuccessHandler(render)
+          .withFailureHandler(onError)
+          .resetDemo();
+      }
+      function onError(err) {
+        alert("Error: " + (err && err.message ? err.message : err));
+      }
+      function setSource(v) {
+        source = v;
+        document
+          .getElementById("src_in")
+          .classList.toggle("on", v === "Inbound");
+        document
+          .getElementById("src_out")
+          .classList.toggle("on", v === "Outbound");
+      }
+
+      function updateDurPreview() {
+        const s = document.getElementById("f_start").value,
+          e = document.getElementById("f_end").value;
+        if (!s || !e) {
+          document.getElementById("f_durPreview").textContent = "—";
+          return;
+        }
+        const [sh, sm] = s.split(":").map(Number),
+          [eh, em] = e.split(":").map(Number);
+        const mins = eh * 60 + em - (sh * 60 + sm);
+        if (mins <= 0) {
+          document.getElementById("f_durPreview").textContent = "⚠";
+          return;
+        }
+        const h = Math.floor(mins / 60),
+          m = mins % 60;
+        document.getElementById("f_durPreview").textContent = h
+          ? m
+            ? `${h}h ${m}m`
+            : `${h}h`
+          : `${m}m`;
+      }
+
+      function openModal(bay, start) {
+        picked = { bay, start, date: currentDate() };
+        const bayName = STATE.bays.find((b) => b.id === bay).name;
+        const dateStr = new Date(picked.date).toLocaleDateString("en-PH", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+        document.getElementById("slotInfo").textContent =
+          `${dateStr} · ${bayName} · ${start}`;
+        [
+          "f_lastName",
+          "f_firstName",
+          "f_contact",
+          "f_plate",
+          "f_csNo",
+          "f_model",
+          "f_year",
+          "f_assLast",
+          "f_assFirst",
+          "f_assContact",
+          "f_remarks",
+        ].forEach((id) => (document.getElementById(id).value = ""));
+        document.getElementById("f_start").value = start;
+        const [sh, sm] = start.split(":").map(Number);
+        const endMin = sh * 60 + sm + 60;
+        document.getElementById("f_end").value =
+          String(Math.floor(endMin / 60)).padStart(2, "0") +
+          ":" +
+          String(endMin % 60).padStart(2, "0");
+        updateDurPreview();
+        setSource("Inbound");
+        document.getElementById("modal").classList.add("show");
+        setTimeout(() => document.getElementById("f_lastName").focus(), 50);
+      }
+      function closeModal() {
+        document.getElementById("modal").classList.remove("show");
+      }
+      function val(id) {
+        return document.getElementById(id).value;
+      }
+      function save() {
+        const start = val("f_start"),
+          end = val("f_end");
+        if (!start || !end) {
+          alert("Please enter start and end time.");
+          return;
+        }
+        const [sh, sm] = start.split(":").map(Number),
+          [eh, em] = end.split(":").map(Number);
+        const dur = eh * 60 + em - (sh * 60 + sm);
+        if (dur <= 0) {
+          alert("End time must be after start time.");
+          return;
+        }
+        picked.start = start;
+        const p = {
+          date: picked.date,
+          bay: picked.bay,
+          start: start,
+          dur: dur,
+          lastName: val("f_lastName"),
+          firstName: val("f_firstName"),
+          contact: val("f_contact"),
+          plate: val("f_plate"),
+          csNo: val("f_csNo"),
+          model: val("f_model"),
+          year: val("f_year"),
+          type: val("f_type"),
+          source: source,
+          advisor: val("f_advisor"),
+          assigneeLast: val("f_assLast"),
+          assigneeFirst: val("f_assFirst"),
+          assigneeContact: val("f_assContact"),
+          remarks: val("f_remarks"),
+        };
+        google.script.run
+          .withSuccessHandler((s) => {
+            render(s);
+            closeModal();
+          })
+          .withFailureHandler(onError)
+          .bookService(p);
+      }
+      document.getElementById("f_date").addEventListener("change", () => {
+        updateDateChip();
+        refresh();
+      });
+      document.getElementById("f_status").addEventListener("change", refresh);
+      document
+        .getElementById("f_start")
+        .addEventListener("change", updateDurPreview);
+      document
+        .getElementById("f_end")
+        .addEventListener("change", updateDurPreview);
+      document.getElementById("modal").addEventListener("click", (e) => {
+        if (e.target.id === "modal") closeModal();
+      });
+      updateDateChip();
+      refresh();
+      setInterval(refresh, 60000);
+    </script>
+  </body>
+</html>
