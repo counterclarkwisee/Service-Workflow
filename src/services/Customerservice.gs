@@ -1,89 +1,141 @@
 /**
- * CustomerService.gs — Handles the logic of deduplication and importing
+ * CustomerService.gs — business logic layer
+ * Column Reference:
+ * 0: Customer Name | 1: Mobile | 2: Address | 3: CS Number | 4: Plate No. | 5: Model
  */
 const CustomerService = (function () {
-  /**
-   * Main function to be called every month.
-   * Scans 'customer_upload' and moves unique rows to 'customer_master'.
-   */
   function importMonthlyList() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const uploadSheet = ss.getSheetByName("customer_upload");
+    const masterSheet = ss.getSheetByName("customer_master");
 
-    if (!uploadSheet)
-      throw new Error("Please create a 'customer_upload' sheet first.");
-
-    // 1. Get New Data from Upload Sheet
-    // Assumes headers are in Row 1, data starts Row 2
-    const uploadData = uploadSheet.getDataRange().getValues();
-    if (uploadData.length <= 1) {
-      SpreadsheetApp.getUi().alert("Upload sheet is empty!");
-      return;
+    if (!uploadSheet || !masterSheet) {
+      throw new Error(
+        "Ensure both 'customer_upload' and 'customer_master' sheets exist.",
+      );
     }
 
-    // 2. Get Existing Data from Master
-    const existingCustomers = CustomerRepo.listAll();
+    // 1. Build a "Database Map" from the Master list
+    const masterData = masterSheet.getDataRange().getValues();
+    const masterMap = new Map();
 
-    // 3. Create a "Map" of existing keys for lightning-fast checking
-    // Key = CS_Number + "|" + Plate_Number
-    const existingKeys = new Set(
-      existingCustomers.map(
-        (c) =>
-          String(c.cs_number).trim().toUpperCase() +
-          "|" +
-          String(c.plate_number).trim().toUpperCase(),
-      ),
-    );
-
-    const newRowsToAppend = [];
-    let skipCount = 0;
-
-    // 4. Process the uploaded data (Start from index 1 to skip headers)
-    for (let i = 1; i < uploadData.length; i++) {
-      const row = uploadData[i];
-
-      const customerObj = {
-        customer_name: row[0], // Column A
-        mobile: row[1], // Column B
-        address: row[2], // Column C
-        cs_number: row[3], // Column D
-        plate_number: row[4], // Column E
-        model: row[5], // Column F
-      };
-
-      const key =
-        String(customerObj.cs_number).trim().toUpperCase() +
-        "|" +
-        String(customerObj.plate_number).trim().toUpperCase();
-
-      if (existingKeys.has(key)) {
-        skipCount++;
-      } else {
-        newRowsToAppend.push(customerObj);
-        existingKeys.add(key); // Prevent duplicates within the same upload file
+    // Start at i=1 to skip the header row
+    for (let i = 1; i < masterData.length; i++) {
+      const row = masterData[i];
+      const key = _buildKey(row[3], row[4]); // Index 3 (CS), Index 4 (Plate)
+      if (key) {
+        masterMap.set(key, {
+          mobile: String(row[1]).trim(),
+          rowNumber: i + 1, // We need the physical row number for overwriting
+        });
       }
     }
 
-    // 5. Execute the Insert
-    if (newRowsToAppend.length > 0) {
-      CustomerRepo.insertBatch(newRowsToAppend);
-      // Optional: Clear the upload sheet after successful import
-      // uploadSheet.getRange(2, 1, uploadSheet.getLastRow(), uploadSheet.getLastColumn()).clearContent();
-
+    // 2. Get data from the Upload sheet
+    const uploadRange = uploadSheet.getDataRange();
+    const uploadData = uploadRange.getValues();
+    if (uploadData.length <= 1) {
       SpreadsheetApp.getUi().alert(
-        "Import Complete!\n" +
-          "Added: " +
-          newRowsToAppend.length +
-          " new customers.\n" +
-          "Skipped: " +
-          skipCount +
-          " duplicates.",
+        "The 'customer_upload' sheet is already empty!",
       );
-    } else {
-      SpreadsheetApp.getUi().alert(
-        "No new customers found. All rows were duplicates.",
-      );
+      return;
     }
+
+    const newRowsToAppend = [];
+    let skipCount = 0;
+    let updateCount = 0;
+
+    // 3. Loop through Upload data
+    for (let i = 1; i < uploadData.length; i++) {
+      const row = uploadData[i];
+      const uploadKey = _buildKey(row[3], row[4]);
+      const uploadMobile = String(row[1]).trim();
+
+      if (!uploadKey) {
+        skipCount++;
+        continue;
+      }
+
+      // CHECK IF KEY EXISTS IN DATABASE
+      if (masterMap.has(uploadKey)) {
+        const existingRecord = masterMap.get(uploadKey);
+
+        // REQUIREMENT 2.1: Check if mobile number is same
+        if (uploadMobile !== existingRecord.mobile && uploadMobile !== "") {
+          // OVERWRITE: Update only the Mobile cell (Column B = index 2)
+          masterSheet
+            .getRange(existingRecord.rowNumber, 2)
+            .setValue(uploadMobile);
+
+          // Update the map in case the same car appears twice in the upload file
+          existingRecord.mobile = uploadMobile;
+          updateCount++;
+        } else {
+          // SKIP: Exactly same data
+          skipCount++;
+        }
+      } else {
+        // REQUIREMENT 2: New Row
+        newRowsToAppend.push([
+          row[0], // Customer Name
+          row[1], // Mobile
+          row[2], // Address
+          row[3], // CS Number
+          row[4], // Plate No.
+          row[5], // Model
+        ]);
+
+        // Add to map temporarily to prevent duplicates within the SAME upload file
+        masterMap.set(uploadKey, { mobile: uploadMobile });
+      }
+    }
+
+    // 4. Batch insert new rows
+    if (newRowsToAppend.length > 0) {
+      masterSheet
+        .getRange(
+          masterSheet.getLastRow() + 1,
+          1,
+          newRowsToAppend.length,
+          newRowsToAppend[0].length,
+        )
+        .setValues(newRowsToAppend);
+    }
+
+    // --- HOUSEKEEPING: DELETE UPLOADED FILES EXCEPT HEADERS ---
+    // We clear content from Row 2 down to the last row used
+    const lastRow = uploadSheet.getLastRow();
+    if (lastRow > 1) {
+      uploadSheet
+        .getRange(2, 1, lastRow - 1, uploadSheet.getLastColumn())
+        .clearContent();
+    }
+
+    // 5. Final Report
+    SpreadsheetApp.getUi().alert(
+      "✅ PROCESS COMPLETE\n\n" +
+        "Added: " +
+        newRowsToAppend.length +
+        " new cars.\n" +
+        "Updated: " +
+        updateCount +
+        " mobile numbers.\n" +
+        "Skipped: " +
+        skipCount +
+        " existing records.\n\n" +
+        "The 'customer_upload' sheet has been cleared for next month.",
+    );
+  }
+
+  function _buildKey(cs, plate) {
+    const cleanCS = String(cs || "")
+      .trim()
+      .toUpperCase();
+    const cleanPlate = String(plate || "")
+      .trim()
+      .toUpperCase();
+    if (!cleanCS && !cleanPlate) return null;
+    return cleanCS + "|" + cleanPlate;
   }
 
   return {

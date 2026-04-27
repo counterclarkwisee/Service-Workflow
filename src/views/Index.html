@@ -684,7 +684,13 @@
             <div class="section-title">👤 Customer Info</div>
             <div class="row2">
               <div class="field">
-                <label>Last Name</label><input id="f_lastName" />
+                <label>Last Name / Company Name</label>
+                <input
+                  id="f_lastName"
+                  list="customerSuggestions"
+                  placeholder="Start typing name..."
+                />
+                <datalist id="customerSuggestions"></datalist>
               </div>
               <div class="field">
                 <label>First Name</label><input id="f_firstName" />
@@ -893,10 +899,21 @@
 
       function render(s) {
         STATE = s;
+
+        // Populate Advisor Dropdown
         const adv = document.getElementById("f_advisor");
         adv.innerHTML =
           '<option value="">— Select advisor —</option>' +
           s.advisors.map((a) => `<option>${a.name}</option>`).join("");
+
+        // NEW: Populate Customer Autocomplete Suggestions
+        const dataList = document.getElementById("customerSuggestions");
+        if (s.customerNames) {
+          dataList.innerHTML = s.customerNames
+            .map((name) => `<option value="${name}">`)
+            .join("");
+        }
+
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
         const d = currentDate();
@@ -1116,7 +1133,7 @@
         if (e.target.id === "modal") closeModal();
       });
 
-      // NEW REVISION: Fetch models from 'sku' sheet on load
+      // Fetch models from 'sku' sheet on load
       google.script.run
         .withSuccessHandler(function (models) {
           const modelSelect = document.getElementById("f_model");

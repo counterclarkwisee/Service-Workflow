@@ -1,26 +1,23 @@
 /**
  * AppointmentService.gs — business logic layer
- *
- * Contains the rules of the business:
- *   - What fields get generated vs copied from the form
- *   - What the initial statuses are
- *   - How appointment + service rows are assembled together
- *   - What "state for the UI" means
- *
- * Services call repositories to read/write data. Services never touch
- * SpreadsheetApp directly — that's the repo's job.
  */
-
 const AppointmentService = (function () {
   /**
-   * Returns state for UI.
-   * 'start' = Arrival Time (Table)
-   * 'gridStart' = Actual Service Start (Grid)
+   * Returns everything the browser needs to render the page.
+   * Now includes 'customerNames' for the autocomplete feature.
    */
   function getState() {
     const bays = BayRepo.listActive();
     const services = ServiceRepo.listAll();
     const appointments = AppointmentRepo.listAll();
+
+    // NEW: Fetch all customers and get unique names for the search suggestions
+    const customers = CustomerRepo.listAll();
+    const uniqueCustomerNames = [
+      ...new Set(customers.map((c) => c.customer_name)),
+    ]
+      .filter((name) => name) // Remove empty names
+      .sort();
 
     const apptById = {};
     appointments.forEach(function (a) {
@@ -38,8 +35,8 @@ const AppointmentService = (function () {
       servicesByDate[date].push({
         id: s.service_id,
         appointment_id: s.appointment_id,
-        start: appt.scheduled_arrival_time, // e.g., 10:30
-        gridStart: s.current_start_time, // e.g., 11:00
+        start: appt.scheduled_arrival_time,
+        gridStart: s.current_start_time,
         dur: Number(s.current_duration_minutes) || 60,
         bay: s.current_bay_id,
         type: s.service_type,
@@ -60,6 +57,7 @@ const AppointmentService = (function () {
         return { id: b.bay_id, name: b.bay_name, type: b.bay_type };
       }),
       servicesByDate: servicesByDate,
+      customerNames: uniqueCustomerNames, // Sent to the UI
     };
   }
 
@@ -167,13 +165,10 @@ const AppointmentService = (function () {
   }
 
   function _getAdvisors() {
-    return [
-      { id: "SA001", name: "Cruz, Mark" },
-      { id: "SA002", name: "Lim, Paolo" },
-      { id: "SA003", name: "Reyes, Anna" },
-      { id: "SA004", name: "Tan, Grace" },
-      { id: "SA005", name: "Santos, Miguel" },
-    ];
+    const advisors = UserRepo.findByPosition("Service Advisor");
+    return advisors.map((u) => ({
+      name: u.team_member,
+    }));
   }
 
   return {

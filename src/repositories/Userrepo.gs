@@ -1,0 +1,55 @@
+/**
+ * UserRepo.gs — data access for the 'users' sheet
+ */
+const UserRepo = (function () {
+  const SHEET_NAME = "users";
+
+  /**
+   * Fetches all rows from the users sheet starting from Row 3 (the header row).
+   */
+  function listAll() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return [];
+
+    // Get data starting from Row 3 (Headers)
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 3) return []; // Sheet is essentially empty
+
+    const data = sheet
+      .getRange(3, 1, lastRow - 2, sheet.getLastColumn())
+      .getValues();
+
+    // Convert Row 3 into keys (e.g., "TEAM MEMBER" becomes "team_member")
+    const headers = data
+      .shift()
+      .map((h) => h.toString().toLowerCase().trim().replace(/\s+/g, "_"));
+
+    // Map rows to objects
+    return data.map((row) => {
+      const obj = {};
+      headers.forEach((key, i) => {
+        obj[key] = row[i];
+      });
+      return obj;
+    });
+  }
+
+  /**
+   * Filters users by their position.
+   */
+  function findByPosition(positionName) {
+    const all = listAll();
+    return all.filter(
+      (u) =>
+        String(u.position || "")
+          .trim()
+          .toUpperCase() === positionName.toUpperCase(),
+    );
+  }
+
+  return {
+    listAll: listAll,
+    findByPosition: findByPosition,
+  };
+})();
