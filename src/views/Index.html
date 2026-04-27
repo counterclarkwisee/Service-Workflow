@@ -706,7 +706,10 @@
             </div>
             <div class="row2">
               <div class="field">
-                <label>Vehicle Model</label><input id="f_model" />
+                <label>Vehicle Model</label>
+                <select id="f_model">
+                  <option value="">— Loading models... —</option>
+                </select>
               </div>
               <div class="field"><label>Year</label><input id="f_year" /></div>
             </div>
@@ -938,7 +941,9 @@
           let i = 0;
           while (i < SLOTS.length) {
             const slot = SLOTS[i];
-            const svc = visible.find((x) => x.bay === b.id && x.start === slot);
+            const svc = visible.find(
+              (x) => x.bay === b.id && x.gridStart === slot,
+            );
             const nowCls =
               isToday && nowMin >= toMin(slot) && nowMin < toMin(slot) + 30
                 ? " now"
@@ -974,7 +979,9 @@
           .resetDemo();
       }
       function onError(err) {
-        alert("Error: " + (err && err.message ? err.message : err));
+        const message = err && err.message ? err.message : String(err);
+        const cleanMessage = message.replace("Error: ", "");
+        alert(cleanMessage);
       }
       function setSource(v) {
         source = v;
@@ -1108,6 +1115,21 @@
       document.getElementById("modal").addEventListener("click", (e) => {
         if (e.target.id === "modal") closeModal();
       });
+
+      // NEW REVISION: Fetch models from 'sku' sheet on load
+      google.script.run
+        .withSuccessHandler(function (models) {
+          const modelSelect = document.getElementById("f_model");
+          modelSelect.innerHTML = '<option value="">— Select model —</option>';
+          models.forEach((m) => {
+            const opt = document.createElement("option");
+            opt.value = m;
+            opt.textContent = m;
+            modelSelect.appendChild(opt);
+          });
+        })
+        .getSkuModels();
+
       updateDateChip();
       refresh();
       setInterval(refresh, 60000);

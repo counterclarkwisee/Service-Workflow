@@ -7,7 +7,7 @@
  */
 
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile("Index")
+  return HtmlService.createHtmlOutputFromFile("views/Index")
     .setTitle("Toyota Service Workflow")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -18,4 +18,18 @@ function doGet(e) {
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function getSkuModels() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("sku");
+
+  // Get all data from Column A, starting at row 2
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const values = sheet.getRange("A2:A" + lastRow).getValues();
+
+  // Flatten into a 1D array and remove any empty rows
+  return values.flat().filter((item) => item !== "");
 }

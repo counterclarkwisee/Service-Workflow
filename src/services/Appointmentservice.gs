@@ -13,16 +13,15 @@
 
 const AppointmentService = (function () {
   /**
-   * Returns everything the browser needs to render the page.
-   * { advisors, bays, servicesByDate }
+   * Returns state for UI.
+   * 'start' = Arrival Time (Table)
+   * 'gridStart' = Actual Service Start (Grid)
    */
   function getState() {
     const bays = BayRepo.listActive();
     const services = ServiceRepo.listAll();
     const appointments = AppointmentRepo.listAll();
 
-    // Join services with their parent appointments so the UI gets
-    // denormalized rows (customer name, plate, etc. inline with service).
     const apptById = {};
     appointments.forEach(function (a) {
       apptById[a.appointment_id] = a;
@@ -39,7 +38,8 @@ const AppointmentService = (function () {
       servicesByDate[date].push({
         id: s.service_id,
         appointment_id: s.appointment_id,
-        start: s.current_start_time,
+        start: appt.scheduled_arrival_time, // e.g., 10:30
+        gridStart: s.current_start_time, // e.g., 11:00
         dur: Number(s.current_duration_minutes) || 60,
         bay: s.current_bay_id,
         type: s.service_type,
@@ -63,14 +63,46 @@ const AppointmentService = (function () {
     };
   }
 
-  /**
-   * Creates an appointment + one service row from the booking payload.
-   * Returns nothing; the controller calls getState() after to refresh the UI.
-   */
+  function _getConflictingBayName(bayId, date, startTime) {
+    const allServices = ServiceRepo.listAll();
+    const allAppts = AppointmentRepo.listAll();
+    const allBays = BayRepo.listActive();
+
+    const apptDates = {};
+    allAppts.forEach((a) => (apptDates[a.appointment_id] = a.appointment_date));
+
+    const conflict = allServices.find((s) => {
+      const sDate = apptDates[s.appointment_id];
+      return (
+        s.current_bay_id === bayId &&
+        sDate === date &&
+        s.current_start_time === startTime &&
+        s.status !== "cancelled"
+      );
+    });
+
+    if (conflict) {
+      const bay = allBays.find((b) => b.bay_id === bayId);
+      return bay ? bay.bay_name : bayId;
+    }
+    return null;
+  }
+
   function bookAppointment(p, user) {
+    const conflictingBayName = _getConflictingBayName(p.bay, p.date, p.start);
+
+    if (conflictingBayName) {
+      throw new Error(
+        conflictingBayName +
+          " is already booked for that time. Please pick another time.",
+      );
+    }
+
     const now = new Date();
     const apptId = _generateId("APT");
     const serviceId = _generateId("SVC");
+
+    const arrivalTime = _subtractMinutes(p.start, 30);
 
     const appointment = {
       appointment_id: apptId,
@@ -84,7 +116,7 @@ const AppointmentService = (function () {
       vehicle_model: p.model || "",
       vehicle_year: p.year || "",
       appointment_date: p.date,
-      scheduled_arrival_time: p.start,
+      scheduled_arrival_time: arrivalTime,
       assigned_advisor_name: p.advisor || "",
       source: p.source || "Inbound",
       status: "booked",
@@ -117,7 +149,14 @@ const AppointmentService = (function () {
     ServiceRepo.insert(service);
   }
 
-  // --- private ---
+  function _subtractMinutes(timeStr, minsToSubtract) {
+    const [h, m] = timeStr.split(":").map(Number);
+    let date = new Date();
+    date.setHours(h, m, 0, 0);
+    date.setMinutes(date.getMinutes() - minsToSubtract);
+
+    return Utilities.formatDate(date, "Asia/Manila", "HH:mm");
+  }
 
   function _generateId(prefix) {
     const ts = new Date().getTime();
@@ -128,7 +167,6 @@ const AppointmentService = (function () {
   }
 
   function _getAdvisors() {
-    // Hardcoded for MVP. Move to a `staff` sheet filtered by role later.
     return [
       { id: "SA001", name: "Cruz, Mark" },
       { id: "SA002", name: "Lim, Paolo" },
