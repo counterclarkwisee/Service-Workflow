@@ -10,27 +10,45 @@ const DataFieldsRepo = (function () {
     if (!sheet) return { categories: [], requests: {} };
 
     const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return { categories: [], requests: {} };
+    if (lastRow < 4) return { categories: [], requests: {} };
 
-    // Get Column H (Service Category) and Column I (Service Request)
-    // Starting from Row 2 to skip headers
-    const data = sheet.getRange(2, 8, lastRow - 1, 2).getValues();
+    // Get Column H (8) and Column I (9) starting from Row 4
+    const data = sheet.getRange(4, 8, lastRow - 3, 2).getValues();
 
     const categories = [];
+    const allRequests = []; // To store every unique item in Column I
     const mapping = {};
 
     data.forEach((row) => {
       const cat = String(row[0] || "").trim();
       const req = String(row[1] || "").trim();
 
-      if (cat) {
-        if (!categories.includes(cat)) categories.push(cat);
-        if (!mapping[cat]) mapping[cat] = [];
-        if (req && !mapping[cat].includes(req)) {
-          mapping[cat].push(req);
+      if (cat && !categories.includes(cat)) {
+        categories.push(cat);
+      }
+
+      if (req) {
+        if (!allRequests.includes(req)) {
+          allRequests.push(req);
+        }
+
+        // Keep standard relational logic for categories like GJ
+        if (cat) {
+          if (!mapping[cat]) mapping[cat] = [];
+          if (!mapping[cat].includes(req)) {
+            mapping[cat].push(req);
+          }
         }
       }
     });
+
+    // OVERRIDE: Force EM and PMS to contain EVERYTHING from Column I
+    if (categories.includes("EM")) {
+      mapping["EM"] = allRequests;
+    }
+    if (categories.includes("PMS")) {
+      mapping["PMS"] = allRequests;
+    }
 
     return {
       categories: categories.sort(),

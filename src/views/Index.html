@@ -819,7 +819,11 @@
               </select>
             </div>
 
-            <div class="field">
+            <div
+              class="field"
+              id="serviceRequestContainer"
+              style="display: none"
+            >
               <label>Service Request</label>
               <select id="f_type">
                 <option value="">— Select Category First —</option>
@@ -1002,12 +1006,10 @@
         document.getElementById("f_plate").value = c["Plate No."] || "";
         document.getElementById("f_csNo").value = c["CS Number"] || "";
 
-        // Matching Logic for Vehicle Model
         const fullVariantString = (c["Model"] || "").toUpperCase();
         let matchedModel = "";
 
         if (fullVariantString && ALL_MODELS.length > 0) {
-          // Scan SKU list to see if a model name (e.g. FORTUNER) is inside the variant string
           matchedModel =
             ALL_MODELS.find((m) =>
               fullVariantString.includes(m.toUpperCase()),
@@ -1024,19 +1026,26 @@
         }
       });
 
-      // --- LOGIC FOR DYNAMIC SERVICE REQUESTS ---
+      // --- RELATIONAL SERVICE LOGIC ---
       function updateServiceRequests() {
         const cat = document.getElementById("f_category").value;
         const reqSelect = document.getElementById("f_type");
+        const container = document.getElementById("serviceRequestContainer");
 
-        if (
-          !cat ||
-          !STATE ||
-          !STATE.serviceMapping ||
-          !STATE.serviceMapping[cat]
-        ) {
+        // Show container for EM, PMS, or GJ
+        const allowed = ["EM", "PMS", "GJ"];
+        if (allowed.includes(cat)) {
+          container.style.display = "block";
+        } else {
+          container.style.display = "none";
           reqSelect.innerHTML =
             '<option value="">— Select Category First —</option>';
+          return;
+        }
+
+        if (!STATE || !STATE.serviceMapping || !STATE.serviceMapping[cat]) {
+          reqSelect.innerHTML =
+            '<option value="">— No requests found —</option>';
           return;
         }
 
@@ -1154,10 +1163,13 @@
 
       function render(s) {
         STATE = s;
+        if (s.skuModels) ALL_MODELS = s.skuModels;
+
         const adv = document.getElementById("f_advisor");
         adv.innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
+
         const catSelect = document.getElementById("f_category");
         catSelect.innerHTML = '<option value="">— Select Category —</option>';
         (s.serviceCategories || []).forEach((cat) => {
@@ -1294,6 +1306,11 @@
         document.getElementById("f_apptTime").value = start;
         syncWorkshopFromAppt();
         setSource("Inbound");
+
+        // Hide relational field by default
+        document.getElementById("serviceRequestContainer").style.display =
+          "none";
+
         document.getElementById("modal").classList.add("show");
         setTimeout(() => document.getElementById("f_lastName").focus(), 50);
       }
@@ -1318,14 +1335,7 @@
           start: val("f_start"),
           arrival: val("f_apptTime"),
         };
-        if (
-          !f.start ||
-          !f.arrival ||
-          !f.lastName ||
-          !f.contact ||
-          !f.plate ||
-          !f.type
-        ) {
+        if (!f.start || !f.arrival || !f.lastName || !f.contact || !f.plate) {
           alert("Please fill mandatory fields.");
           return;
         }
@@ -1384,15 +1394,11 @@
         if (e.target.id === "modal") closeModal();
       });
 
-      google.script.run
-        .withSuccessHandler(function (models) {
-          ALL_MODELS = models || []; // Store models for matching logic
-        })
-        .getSkuModels();
+      // SkuModels are now handled by getState() via render()
 
       updateDateChip();
       refresh();
-      loadCustomerBase(); // Load customer data for fuzzy matching
+      loadCustomerBase();
       setInterval(refresh, 60000);
     </script>
   </body>
