@@ -2,6 +2,8 @@
  * AppointmentService.gs — business logic layer
  */
 const AppointmentService = (function () {
+  const BRANCH_CODE = "TLB";
+
   /**
    * Returns everything the browser needs to render the page.
    * Now includes 'customerNames' for the autocomplete feature.
@@ -165,9 +167,22 @@ const AppointmentService = (function () {
   }
 
   function _getAdvisors() {
-    const advisors = UserRepo.findByPosition("Service Advisor");
-    return advisors.map((u) => ({
-      name: u.team_member,
+    // 1. Fetch all users with the "Service Advisor" position
+    const allAdvisors = UserRepo.findByPosition("Service Advisor");
+
+    // 2. Filter with extra safety
+    const filteredAdvisors = allAdvisors.filter(function (u) {
+      // Safely check if u.dealer exists and match it regardless of case/spaces
+      const dealerVal = String(u.dealer || "")
+        .trim()
+        .toUpperCase();
+      return dealerVal === BRANCH_CODE.toUpperCase();
+    });
+
+    // 3. Map to UI format
+    return filteredAdvisors.map((u) => ({
+      // Fallback to "Unnamed" if team_member is missing in the sheet
+      name: (u.team_member || "Unknown Advisor").trim(),
     }));
   }
 
