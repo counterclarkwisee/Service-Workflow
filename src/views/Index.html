@@ -682,8 +682,8 @@
           <button class="btn ghost" onclick="goToday()">Today</button>
           <span class="datechip" id="dateChip">Today</span>
           <div class="filter">
-            <label>Status</label
-            ><select id="f_status">
+            <label>Status</label>
+            <select id="f_status">
               <option value="">All</option>
               <option value="scheduled">Scheduled</option>
               <option value="in_service">In Service</option>
@@ -802,17 +802,21 @@
           </div>
           <div class="section">
             <div class="section-title">🔧 Service Details</div>
+
             <div class="field">
-              <label>Job Type</label
-              ><select id="f_type">
-                <option>PMS 10K</option>
-                <option>PMS 20K</option>
-                <option>PMS 40K</option>
-                <option>General Repair</option>
-                <option>Engine Maintenance</option>
-                <option>Body Paint</option>
+              <label>Service Category</label>
+              <select id="f_category" onchange="updateServiceRequests()">
+                <option value="">— Select Category —</option>
               </select>
             </div>
+
+            <div class="field">
+              <label>Service Request</label>
+              <select id="f_type">
+                <option value="">— Select Category First —</option>
+              </select>
+            </div>
+
             <div class="field">
               <label>Source</label>
               <div class="pillgroup">
@@ -835,8 +839,8 @@
               </div>
             </div>
             <div class="field">
-              <label>Service Advisor</label
-              ><select id="f_advisor"></select>
+              <label>Service Advisor</label>
+              <select id="f_advisor"></select>
             </div>
             <div class="field">
               <label>Workshop Schedule (Bay Entry)</label>
@@ -870,8 +874,8 @@
           </div>
         </div>
         <div class="dactions">
-          <button class="btn" onclick="closeModal()">Cancel</button
-          ><button class="btn primary" id="bookBtn" onclick="save()">
+          <button class="btn" onclick="closeModal()">Cancel</button>
+          <button class="btn primary" id="bookBtn" onclick="save()">
             Book Appointment
           </button>
         </div>
@@ -901,7 +905,6 @@
         "17:00",
       ];
 
-      // TIMELINE FULL RANGE (SA RECEIVING)
       const FULL_SCHEDULE_SLOTS = [
         "06:00",
         "06:30",
@@ -931,16 +934,40 @@
       let STATE = null,
         picked = null,
         source = "Inbound",
-        view = "both",
-        currentMatches = [],
-        normalizedCustomers = [];
+        view = "both";
 
       const today = new Date().toLocaleDateString("en-CA", {
         timeZone: "Asia/Manila",
       });
       document.getElementById("f_date").value = today;
 
-      // TOAST LOGIC
+      // --- LOGIC FOR DYNAMIC SERVICE REQUESTS ---
+      function updateServiceRequests() {
+        const cat = document.getElementById("f_category").value;
+        const reqSelect = document.getElementById("f_type");
+
+        if (
+          !cat ||
+          !STATE ||
+          !STATE.serviceMapping ||
+          !STATE.serviceMapping[cat]
+        ) {
+          reqSelect.innerHTML =
+            '<option value="">— Select Category First —</option>';
+          return;
+        }
+
+        const requests = STATE.serviceMapping[cat];
+        reqSelect.innerHTML = '<option value="">— Select Request —</option>';
+
+        requests.forEach((req) => {
+          const opt = document.createElement("option");
+          opt.value = req;
+          opt.textContent = req;
+          reqSelect.appendChild(opt);
+        });
+      }
+
       function showToast(msg, type = "success") {
         const toast = document.getElementById("toast");
         toast.textContent = msg;
@@ -972,6 +999,7 @@
       function currentDate() {
         return document.getElementById("f_date").value;
       }
+
       function shiftDate(delta) {
         const d = new Date(currentDate());
         d.setDate(d.getDate() + delta);
@@ -982,11 +1010,13 @@
         updateDateChip();
         refresh();
       }
+
       function goToday() {
         document.getElementById("f_date").value = today;
         updateDateChip();
         refresh();
       }
+
       function updateDateChip() {
         const d = currentDate();
         const chip = document.getElementById("dateChip");
@@ -1007,6 +1037,7 @@
                 ? "Yesterday · " + label
                 : label;
       }
+
       function setView(v) {
         view = v;
         const s = document.getElementById("split");
@@ -1027,6 +1058,7 @@
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
       }
+
       function statusLabel(s) {
         return (
           {
@@ -1040,10 +1072,23 @@
 
       function render(s) {
         STATE = s;
+
+        // Populate Advisors
         const adv = document.getElementById("f_advisor");
         adv.innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
+
+        // Populate Categories
+        const catSelect = document.getElementById("f_category");
+        catSelect.innerHTML = '<option value="">— Select Category —</option>';
+        (s.serviceCategories || []).forEach((cat) => {
+          const opt = document.createElement("option");
+          opt.value = cat;
+          opt.textContent = cat;
+          catSelect.appendChild(opt);
+        });
+
         const dataList = document.getElementById("customerSuggestions");
         if (s.customerNames) {
           dataList.innerHTML = s.customerNames
@@ -1061,15 +1106,10 @@
           (x) => !statusFilter || x.status === statusFilter,
         );
 
-        // --- SA RECEIVING TIMELINE LOGIC (GOOGLE MEET STYLE) ---
         let tableHtml = "";
-
         FULL_SCHEDULE_SLOTS.forEach((slotTime) => {
-          // Find appointments starting AT this specific arrival slot
           const svc = visible.find((x) => x.start === slotTime);
-
           if (svc) {
-            // OCCUPIED ROW (Treating every reception as exactly 30 mins for the timeline)
             tableHtml += `
               <tr class="occupied-row" style="background-color: #fdf2f2;">
                 <td style="border-left: 4px solid #eb0a1e;">
@@ -1084,7 +1124,6 @@
                 <td><span class="badge b-${svc.status}">${statusLabel(svc.status)}</span></td>
               </tr>`;
           } else {
-            // EMPTY SLOT ROW (Shows every 30 mins regardless of workshop job length)
             tableHtml += `
               <tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;">
                 <td style="color: #9a9aa0;">${slotTime}</td>
@@ -1147,6 +1186,7 @@
       function onError(err) {
         alert(String(err).replace("Error: ", ""));
       }
+
       function setSource(v) {
         source = v;
         document
@@ -1166,12 +1206,6 @@
           m = mins % 60;
         document.getElementById("f_durPreview").textContent =
           mins > 0 ? (h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`) : "⚠";
-      }
-
-      function openModalWithDefaults() {
-        const defaultBay =
-          STATE && STATE.bays && STATE.bays.length > 0 ? STATE.bays[0].id : "";
-        openModal(defaultBay, "08:00");
       }
 
       function openModalWithDefaultsAt(time) {
@@ -1196,6 +1230,8 @@
           "f_assFirst",
           "f_assContact",
           "f_remarks",
+          "f_category",
+          "f_type",
         ].forEach((id) => (document.getElementById(id).value = ""));
         document.getElementById("f_apptTime").value = start;
         syncWorkshopFromAppt();
@@ -1203,6 +1239,7 @@
         document.getElementById("modal").classList.add("show");
         setTimeout(() => document.getElementById("f_lastName").focus(), 50);
       }
+
       function closeModal() {
         document.getElementById("modal").classList.remove("show");
       }
@@ -1223,17 +1260,28 @@
           start: val("f_start"),
           arrival: val("f_apptTime"),
         };
-        if (!f.start || !f.arrival || !f.lastName || !f.contact || !f.plate) {
+
+        if (
+          !f.start ||
+          !f.arrival ||
+          !f.lastName ||
+          !f.contact ||
+          !f.plate ||
+          !f.type
+        ) {
           alert("Please fill mandatory fields.");
           return;
         }
+
         const dur = toMin(val("f_end")) - toMin(f.start);
         if (dur <= 0) {
           alert("End time must be after start time.");
           return;
         }
+
         btn.disabled = true;
         btn.textContent = "Booking...";
+
         const p = {
           date: picked.date,
           bay: picked.bay,
@@ -1255,6 +1303,7 @@
           assigneeContact: val("f_assContact"),
           remarks: val("f_remarks"),
         };
+
         google.script.run
           .withSuccessHandler((s) => {
             render(s);

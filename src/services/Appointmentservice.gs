@@ -6,19 +6,20 @@ const AppointmentService = (function () {
 
   /**
    * Returns everything the browser needs to render the page.
-   * Now includes 'customerNames' for the autocomplete feature.
    */
   function getState() {
     const bays = BayRepo.listActive();
     const services = ServiceRepo.listAll();
     const appointments = AppointmentRepo.listAll();
 
-    // NEW: Fetch all customers and get unique names for the search suggestions
+    // NEW: Fetch mapping from data_fields sheet
+    const serviceData = DataFieldsRepo.getMapping();
+
     const customers = CustomerRepo.listAll();
     const uniqueCustomerNames = [
       ...new Set(customers.map((c) => c.customer_name)),
     ]
-      .filter((name) => name) // Remove empty names
+      .filter((name) => name)
       .sort();
 
     const apptById = {};
@@ -59,7 +60,10 @@ const AppointmentService = (function () {
         return { id: b.bay_id, name: b.bay_name, type: b.bay_type };
       }),
       servicesByDate: servicesByDate,
-      customerNames: uniqueCustomerNames, // Sent to the UI
+      customerNames: uniqueCustomerNames,
+      // NEW: Send Categories and the Map (Requests) to the UI
+      serviceCategories: serviceData.categories,
+      serviceMapping: serviceData.requests,
     };
   }
 
@@ -133,7 +137,7 @@ const AppointmentService = (function () {
       appointment_id: apptId,
       created_at: now,
       created_by: user.email,
-      service_type: p.type || "",
+      service_type: p.type || "", // This p.type is the 'Service Request'
       estimated_duration_minutes: p.dur,
       current_duration_minutes: p.dur,
       original_start_time: p.start,
@@ -167,21 +171,15 @@ const AppointmentService = (function () {
   }
 
   function _getAdvisors() {
-    // 1. Fetch all users with the "Service Advisor" position
     const allAdvisors = UserRepo.findByPosition("Service Advisor");
-
-    // 2. Filter with extra safety
     const filteredAdvisors = allAdvisors.filter(function (u) {
-      // Safely check if u.dealer exists and match it regardless of case/spaces
       const dealerVal = String(u.dealer || "")
         .trim()
         .toUpperCase();
       return dealerVal === BRANCH_CODE.toUpperCase();
     });
 
-    // 3. Map to UI format
     return filteredAdvisors.map((u) => ({
-      // Fallback to "Unnamed" if team_member is missing in the sheet
       name: (u.team_member || "Unknown Advisor").trim(),
     }));
   }
