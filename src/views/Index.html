@@ -7,6 +7,7 @@
       rel="stylesheet"
     />
     <style>
+      /* Styles preserved from stable version */
       * {
         box-sizing: border-box;
       }
@@ -24,7 +25,6 @@
       main {
         padding: 20px 28px;
       }
-
       .filters {
         display: grid;
         grid-template-columns: 1fr auto 1fr;
@@ -125,6 +125,10 @@
       .btn:hover {
         background: #fdecee;
       }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
       .btn.primary {
         background: #eb0a1e;
         color: #fff;
@@ -143,7 +147,6 @@
         color: #eb0a1e;
         border-color: #eb0a1e;
       }
-
       .viewtoggle {
         display: flex;
         background: #ececef;
@@ -165,7 +168,6 @@
         color: #1a1a1a;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
-
       .split {
         display: grid;
         gap: 16px;
@@ -186,9 +188,15 @@
         flex-direction: column;
         min-height: 600px;
       }
+      /* HEADER: ALIGN BUTTON TO RIGHT */
       .pane-head {
         padding: 14px 18px;
         border-bottom: 1px solid #ececef;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pane-head .left-grp {
         display: flex;
         align-items: center;
         gap: 10px;
@@ -211,7 +219,6 @@
         flex: 1;
         overflow: auto;
       }
-
       .tbl {
         width: 100%;
         border-collapse: collapse;
@@ -406,13 +413,12 @@
         background: #e6f4ea;
         border-color: #1e8e3e;
       }
-
       .modal {
         position: fixed;
         inset: 0;
         background: rgba(26, 26, 26, 0.5);
         display: none;
-        z-index: 10;
+        z-index: 100;
       }
       .modal.show {
         display: block;
@@ -515,6 +521,12 @@
         min-height: 70px;
         font-family: Inter;
       }
+      .field input[readonly] {
+        background-color: #f8f8f9;
+        color: #6b6b70;
+        cursor: not-allowed;
+        border-style: dashed;
+      }
       .timerange {
         display: flex;
         align-items: center;
@@ -599,9 +611,31 @@
         position: sticky;
         bottom: 0;
       }
+      /* TOAST NOTIFICATION STYLES */
+      #toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        z-index: 9999;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: opacity 0.3s;
+      }
+      .toast-success {
+        background: #1e8e3e;
+      }
+      .toast-error {
+        background: #eb0a1e;
+      }
     </style>
   </head>
   <body>
+    <div id="toast"></div>
+
     <main>
       <div class="filters">
         <div class="filters-left">
@@ -640,8 +674,17 @@
       <div class="split both" id="split">
         <div class="pane" id="tablePane">
           <div class="pane-head">
-            <h3>📋 Appointments</h3>
-            <span class="count" id="tableCount">0</span>
+            <div class="left-grp">
+              <h3>📋 Appointments</h3>
+              <span class="count" id="tableCount">0</span>
+            </div>
+            <button
+              class="btn primary"
+              onclick="openModalWithDefaults()"
+              style="padding: 6px 14px; font-size: 12px"
+            >
+              + Add Appointment
+            </button>
           </div>
           <div class="pane-body">
             <table class="tbl" id="tbl">
@@ -681,20 +724,27 @@
         </div>
         <div class="dbody">
           <div class="section">
+            <div class="section-title">🕒 Arrival Timing</div>
+            <div class="field">
+              <label>Appointment Time (Arrival)</label>
+              <input
+                type="time"
+                id="f_apptTime"
+                onchange="syncWorkshopFromAppt()"
+              />
+            </div>
+          </div>
+
+          <div class="section">
             <div class="section-title">👤 Customer Info</div>
-            <div class="row2">
-              <div class="field">
-                <label>Last Name / Company Name</label>
-                <input
-                  id="f_lastName"
-                  list="customerSuggestions"
-                  placeholder="Start typing name..."
-                />
-                <datalist id="customerSuggestions"></datalist>
-              </div>
-              <div class="field">
-                <label>First Name</label><input id="f_firstName" />
-              </div>
+            <div class="field">
+              <label>Customer Name / Company Name</label>
+              <input
+                id="f_lastName"
+                list="customerSuggestions"
+                placeholder="Start typing name..."
+              />
+              <datalist id="customerSuggestions"></datalist>
             </div>
             <div class="field">
               <label>Contact Number</label><input id="f_contact" />
@@ -759,7 +809,7 @@
               ><select id="f_advisor"></select>
             </div>
             <div class="field">
-              <label>Time</label>
+              <label>Workshop Schedule (Bay Entry)</label>
               <div class="timerange">
                 <input type="time" id="f_start" step="900" />
                 <span class="dash">–</span>
@@ -791,7 +841,7 @@
         </div>
         <div class="dactions">
           <button class="btn" onclick="closeModal()">Cancel</button
-          ><button class="btn primary" onclick="save()">
+          ><button class="btn primary" id="bookBtn" onclick="save()">
             Book Appointment
           </button>
         </div>
@@ -823,11 +873,43 @@
       let STATE = null,
         picked = null,
         source = "Inbound",
-        view = "both";
+        view = "both",
+        currentMatches = [],
+        normalizedCustomers = [];
+
       const today = new Date().toLocaleDateString("en-CA", {
         timeZone: "Asia/Manila",
       });
       document.getElementById("f_date").value = today;
+
+      // TOAST LOGIC
+      function showToast(msg, type = "success") {
+        const toast = document.getElementById("toast");
+        toast.textContent = msg;
+        toast.className = type === "success" ? "toast-success" : "toast-error";
+        toast.style.display = "block";
+        setTimeout(() => {
+          toast.style.display = "none";
+        }, 4000);
+      }
+
+      function fromMin(mins) {
+        const h = Math.floor(mins / 60)
+          .toString()
+          .padStart(2, "0");
+        const m = (mins % 60).toString().padStart(2, "0");
+        return `${h}:${m}`;
+      }
+
+      function syncWorkshopFromAppt() {
+        const apptVal = document.getElementById("f_apptTime").value;
+        if (!apptVal) return;
+        const workshopStartMins = toMin(apptVal) + 30;
+        document.getElementById("f_start").value = fromMin(workshopStartMins);
+        const workshopEndMins = workshopStartMins + 60;
+        document.getElementById("f_end").value = fromMin(workshopEndMins);
+        updateDurPreview();
+      }
 
       function currentDate() {
         return document.getElementById("f_date").value;
@@ -883,6 +965,7 @@
       }
 
       function toMin(t) {
+        if (!t) return 0;
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
       }
@@ -899,14 +982,10 @@
 
       function render(s) {
         STATE = s;
-
-        // Populate Advisor Dropdown
         const adv = document.getElementById("f_advisor");
         adv.innerHTML =
           '<option value="">— Select advisor —</option>' +
-          s.advisors.map((a) => `<option>${a.name}</option>`).join("");
-
-        // NEW: Populate Customer Autocomplete Suggestions
+          (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
         const dataList = document.getElementById("customerSuggestions");
         if (s.customerNames) {
           dataList.innerHTML = s.customerNames
@@ -918,12 +997,11 @@
           s.bays.length + " bays";
         const d = currentDate();
         const isToday = d === today;
-        const statusFilter = document.getElementById("f_status").value;
         const dayServices = s.servicesByDate[d] || [];
+        const statusFilter = document.getElementById("f_status").value;
         const visible = dayServices.filter(
           (x) => !statusFilter || x.status === statusFilter,
         );
-
         const sorted = [...visible].sort(
           (a, b) => toMin(a.start) - toMin(b.start),
         );
@@ -940,19 +1018,16 @@
                 return `<tr><td><strong>${x.start}</strong><div class="sub">${x.dur} min</div></td><td><div class="name">${name}</div><div class="sub">${x.contact || ""}</div></td><td>${x.plate}<div class="sub">${x.model || ""} ${x.year || ""}</div></td><td>${x.type}</td><td>${bayName}</td><td>${x.advisor || "—"}</td><td><span class="badge b-${x.status}">${statusLabel(x.status)}</span></td></tr>`;
               })
               .join("")
-          : '<tr><td colspan="7"><div class="empty"><div class="big">📅</div>No appointments yet for this day.<br><span style="font-size:11px">Click any empty cell in the bay grid to book.</span></div></td></tr>';
+          : '<tr><td colspan="7"><div class="empty"><div class="big">📅</div>No appointments yet.</div></td></tr>';
 
-        const now = new Date();
-        const nowMin = now.getHours() * 60 + now.getMinutes();
-        let h = '<table class="gtbl"><thead><tr><th class="bay">Bay</th>';
-        SLOTS.forEach((t) => {
-          const cls =
-            isToday && nowMin >= toMin(t) && nowMin < toMin(t) + 30
-              ? "now"
-              : "";
-          h += `<th class="${cls}">${t}</th>`;
-        });
-        h += "</tr></thead><tbody>";
+        const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+        let h =
+          '<table class="gtbl"><thead><tr><th class="bay">Bay</th>' +
+          SLOTS.map(
+            (t) =>
+              `<th class="${isToday && nowMin >= toMin(t) && nowMin < toMin(t) + 30 ? "now" : ""}">${t}</th>`,
+          ).join("") +
+          "</tr></thead><tbody>";
         s.bays.forEach((b) => {
           h += `<tr><td class="bay">${b.name}</td>`;
           let i = 0;
@@ -979,15 +1054,11 @@
           }
           h += "</tr>";
         });
-        h += "</tbody></table>";
-        document.getElementById("grid").innerHTML = h;
+        document.getElementById("grid").innerHTML = h + "</tbody></table>";
       }
 
       function refresh() {
-        google.script.run
-          .withSuccessHandler(render)
-          .withFailureHandler(onError)
-          .getState();
+        google.script.run.withSuccessHandler(render).getState();
       }
       function reset() {
         google.script.run
@@ -996,9 +1067,7 @@
           .resetDemo();
       }
       function onError(err) {
-        const message = err && err.message ? err.message : String(err);
-        const cleanMessage = message.replace("Error: ", "");
-        alert(cleanMessage);
+        alert(String(err).replace("Error: ", ""));
       }
       function setSource(v) {
         source = v;
@@ -1013,40 +1082,28 @@
       function updateDurPreview() {
         const s = document.getElementById("f_start").value,
           e = document.getElementById("f_end").value;
-        if (!s || !e) {
-          document.getElementById("f_durPreview").textContent = "—";
-          return;
-        }
-        const [sh, sm] = s.split(":").map(Number),
-          [eh, em] = e.split(":").map(Number);
-        const mins = eh * 60 + em - (sh * 60 + sm);
-        if (mins <= 0) {
-          document.getElementById("f_durPreview").textContent = "⚠";
-          return;
-        }
+        if (!s || !e) return;
+        const mins = toMin(e) - toMin(s);
         const h = Math.floor(mins / 60),
           m = mins % 60;
-        document.getElementById("f_durPreview").textContent = h
-          ? m
-            ? `${h}h ${m}m`
-            : `${h}h`
-          : `${m}m`;
+        document.getElementById("f_durPreview").textContent =
+          mins > 0 ? (h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`) : "⚠";
+      }
+
+      function openModalWithDefaults() {
+        const defaultBay =
+          STATE && STATE.bays && STATE.bays.length > 0 ? STATE.bays[0].id : "";
+        openModal(defaultBay, "08:00");
       }
 
       function openModal(bay, start) {
         picked = { bay, start, date: currentDate() };
         const bayName = STATE.bays.find((b) => b.id === bay).name;
-        const dateStr = new Date(picked.date).toLocaleDateString("en-PH", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric",
-        });
         document.getElementById("slotInfo").textContent =
-          `${dateStr} · ${bayName} · ${start}`;
+          `${new Date(picked.date).toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} · ${bayName}`;
         [
+          "f_apptTime",
           "f_lastName",
-          "f_firstName",
           "f_contact",
           "f_plate",
           "f_csNo",
@@ -1057,14 +1114,8 @@
           "f_assContact",
           "f_remarks",
         ].forEach((id) => (document.getElementById(id).value = ""));
-        document.getElementById("f_start").value = start;
-        const [sh, sm] = start.split(":").map(Number);
-        const endMin = sh * 60 + sm + 60;
-        document.getElementById("f_end").value =
-          String(Math.floor(endMin / 60)).padStart(2, "0") +
-          ":" +
-          String(endMin % 60).padStart(2, "0");
-        updateDurPreview();
+        document.getElementById("f_apptTime").value = start;
+        syncWorkshopFromAppt();
         setSource("Inbound");
         document.getElementById("modal").classList.add("show");
         setTimeout(() => document.getElementById("f_lastName").focus(), 50);
@@ -1075,36 +1126,47 @@
       function val(id) {
         return document.getElementById(id).value;
       }
+
       function save() {
-        const start = val("f_start"),
-          end = val("f_end");
-        if (!start || !end) {
-          alert("Please enter start and end time.");
-          return;
-        }
-        const [sh, sm] = start.split(":").map(Number),
-          [eh, em] = end.split(":").map(Number);
-        const dur = eh * 60 + em - (sh * 60 + sm);
-        if (dur <= 0) {
-          alert("End time must be after start time.");
-          return;
-        }
-        picked.start = start;
-        const p = {
-          date: picked.date,
-          bay: picked.bay,
-          start: start,
-          dur: dur,
+        const btn = document.getElementById("bookBtn");
+        const f = {
           lastName: val("f_lastName"),
-          firstName: val("f_firstName"),
           contact: val("f_contact"),
           plate: val("f_plate"),
           csNo: val("f_csNo"),
           model: val("f_model"),
-          year: val("f_year"),
           type: val("f_type"),
-          source: source,
           advisor: val("f_advisor"),
+          start: val("f_start"),
+          arrival: val("f_apptTime"),
+        };
+        if (!f.start || !f.arrival || !f.lastName || !f.contact || !f.plate) {
+          alert("Please fill mandatory fields.");
+          return;
+        }
+        const dur = toMin(val("f_end")) - toMin(f.start);
+        if (dur <= 0) {
+          alert("End time must be after start time.");
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = "Booking...";
+        const p = {
+          date: picked.date,
+          bay: picked.bay,
+          start: f.start,
+          dur: dur,
+          apptArrival: f.arrival,
+          lastName: f.lastName,
+          firstName: "",
+          contact: f.contact,
+          plate: f.plate,
+          csNo: f.csNo,
+          model: f.model,
+          year: val("f_year"),
+          type: f.type,
+          source: source,
+          advisor: f.advisor,
           assigneeLast: val("f_assLast"),
           assigneeFirst: val("f_assFirst"),
           assigneeContact: val("f_assContact"),
@@ -1114,10 +1176,14 @@
           .withSuccessHandler((s) => {
             render(s);
             closeModal();
+            btn.disabled = false;
+            btn.textContent = "Book Appointment";
+            showToast("Success!");
           })
           .withFailureHandler(onError)
           .bookService(p);
       }
+
       document.getElementById("f_date").addEventListener("change", () => {
         updateDateChip();
         refresh();
@@ -1133,12 +1199,11 @@
         if (e.target.id === "modal") closeModal();
       });
 
-      // Fetch models from 'sku' sheet on load
       google.script.run
         .withSuccessHandler(function (models) {
           const modelSelect = document.getElementById("f_model");
           modelSelect.innerHTML = '<option value="">— Select model —</option>';
-          models.forEach((m) => {
+          (models || []).forEach((m) => {
             const opt = document.createElement("option");
             opt.value = m;
             opt.textContent = m;
