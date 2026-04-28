@@ -33,3 +33,7 @@ function getSkuModels() {
   // Flatten into a 1D array and remove any empty rows
   return values.flat().filter((item) => item !== "");
 }
+
+function getCustomerData() {
+  return CustomerRepo.listAll();
+}

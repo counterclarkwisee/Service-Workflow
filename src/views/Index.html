@@ -188,7 +188,6 @@
         flex-direction: column;
         min-height: 600px;
       }
-      /* HEADER: ALIGN BUTTON TO RIGHT */
       .pane-head {
         padding: 14px 18px;
         border-bottom: 1px solid #ececef;
@@ -254,8 +253,6 @@
         font-size: 11px;
         margin-top: 2px;
       }
-
-      /* TIMELINE STYLES */
       .occupied-row td {
         padding: 12px 14px !important;
         font-weight: 500;
@@ -270,7 +267,6 @@
         border-bottom: 1px dashed #ececef !important;
         padding: 8px 14px !important;
       }
-
       .badge {
         display: inline-block;
         padding: 3px 9px;
@@ -301,7 +297,6 @@
         border-color: #1e8e3e;
         color: #0f5c26;
       }
-
       .grid-wrap {
         overflow: auto;
         height: 100%;
@@ -644,6 +639,11 @@
       .toast-error {
         background: #eb0a1e;
       }
+
+      /* AUTOCOMPLETE STYLES */
+      .ac-container {
+        position: relative;
+      }
       .ac-results {
         position: absolute;
         top: calc(100% + 4px);
@@ -659,12 +659,21 @@
         display: none;
       }
       .ac-item {
-        padding: 12px 16px;
+        padding: 10px 14px;
         border-bottom: 1px solid #f4f4f6;
         cursor: pointer;
       }
       .ac-item:hover {
         background: #fdecee;
+      }
+      .ac-item .ac-name {
+        font-weight: 600;
+        display: block;
+        color: #1a1a1a;
+      }
+      .ac-item .ac-sub {
+        font-size: 11px;
+        color: #6b6b70;
       }
     </style>
   </head>
@@ -767,12 +776,14 @@
             <div class="section-title">👤 Customer Info</div>
             <div class="field">
               <label>Customer Name / Company Name</label>
-              <input
-                id="f_lastName"
-                list="customerSuggestions"
-                placeholder="Start typing name..."
-              />
-              <datalist id="customerSuggestions"></datalist>
+              <div class="ac-container">
+                <input
+                  id="f_lastName"
+                  placeholder="Start typing name..."
+                  autocomplete="off"
+                />
+                <div id="customerResults" class="ac-results"></div>
+              </div>
             </div>
             <div class="field">
               <label>Contact Number</label><input id="f_contact" />
@@ -791,9 +802,7 @@
             <div class="row2">
               <div class="field">
                 <label>Vehicle Model</label>
-                <select id="f_model">
-                  <option value="">— Loading models... —</option>
-                </select>
+                <input id="f_model" placeholder="Vehicle model..." />
               </div>
               <div class="field optional">
                 <label>Year</label><input id="f_year" />
@@ -934,12 +943,86 @@
       let STATE = null,
         picked = null,
         source = "Inbound",
-        view = "both";
+        view = "both",
+        ALL_CUSTOMERS = [],
+        ALL_MODELS = [];
 
       const today = new Date().toLocaleDateString("en-CA", {
         timeZone: "Asia/Manila",
       });
       document.getElementById("f_date").value = today;
+
+      // --- CUSTOMER FUZZY SEARCH LOGIC ---
+      function loadCustomerBase() {
+        google.script.run
+          .withSuccessHandler((data) => {
+            ALL_CUSTOMERS = data;
+          })
+          .getCustomerData();
+      }
+
+      const nameInput = document.getElementById("f_lastName");
+      const resultsDiv = document.getElementById("customerResults");
+
+      nameInput.addEventListener("input", function () {
+        const val = this.value.toUpperCase();
+        resultsDiv.innerHTML = "";
+
+        if (!val || val.length < 2) {
+          resultsDiv.style.display = "none";
+          return;
+        }
+
+        const matches = ALL_CUSTOMERS.filter(
+          (c) =>
+            c["Customer Name"] &&
+            c["Customer Name"].toString().toUpperCase().includes(val),
+        ).slice(0, 10);
+
+        if (matches.length > 0) {
+          matches.forEach((customer) => {
+            const div = document.createElement("div");
+            div.className = "ac-item";
+            div.innerHTML = `
+              <span class="ac-name">${customer["Customer Name"]}</span>
+              <span class="ac-sub">${customer["Plate No."] || "N/A"} | ${customer["Model"] || ""}</span>
+            `;
+            div.onclick = () => selectCustomer(customer);
+            resultsDiv.appendChild(div);
+          });
+          resultsDiv.style.display = "block";
+        } else {
+          resultsDiv.style.display = "none";
+        }
+      });
+
+      function selectCustomer(c) {
+        document.getElementById("f_lastName").value = c["Customer Name"];
+        document.getElementById("f_contact").value = c["Mobile"] || "";
+        document.getElementById("f_plate").value = c["Plate No."] || "";
+        document.getElementById("f_csNo").value = c["CS Number"] || "";
+
+        // Matching Logic for Vehicle Model
+        const fullVariantString = (c["Model"] || "").toUpperCase();
+        let matchedModel = "";
+
+        if (fullVariantString && ALL_MODELS.length > 0) {
+          // Scan SKU list to see if a model name (e.g. FORTUNER) is inside the variant string
+          matchedModel =
+            ALL_MODELS.find((m) =>
+              fullVariantString.includes(m.toUpperCase()),
+            ) || "";
+        }
+        document.getElementById("f_model").value = matchedModel;
+
+        resultsDiv.style.display = "none";
+      }
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".ac-container")) {
+          resultsDiv.style.display = "none";
+        }
+      });
 
       // --- LOGIC FOR DYNAMIC SERVICE REQUESTS ---
       function updateServiceRequests() {
@@ -959,7 +1042,6 @@
 
         const requests = STATE.serviceMapping[cat];
         reqSelect.innerHTML = '<option value="">— Select Request —</option>';
-
         requests.forEach((req) => {
           const opt = document.createElement("option");
           opt.value = req;
@@ -1072,14 +1154,10 @@
 
       function render(s) {
         STATE = s;
-
-        // Populate Advisors
         const adv = document.getElementById("f_advisor");
         adv.innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
-
-        // Populate Categories
         const catSelect = document.getElementById("f_category");
         catSelect.innerHTML = '<option value="">— Select Category —</option>';
         (s.serviceCategories || []).forEach((cat) => {
@@ -1088,13 +1166,6 @@
           opt.textContent = cat;
           catSelect.appendChild(opt);
         });
-
-        const dataList = document.getElementById("customerSuggestions");
-        if (s.customerNames) {
-          dataList.innerHTML = s.customerNames
-            .map((name) => `<option value="${name}">`)
-            .join("");
-        }
 
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
@@ -1110,12 +1181,8 @@
         FULL_SCHEDULE_SLOTS.forEach((slotTime) => {
           const svc = visible.find((x) => x.start === slotTime);
           if (svc) {
-            tableHtml += `
-              <tr class="occupied-row" style="background-color: #fdf2f2;">
-                <td style="border-left: 4px solid #eb0a1e;">
-                  <strong>${svc.start}</strong>
-                  <div class="sub">30 min recep.</div>
-                </td>
+            tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;">
+                <td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td>
                 <td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td>
                 <td>${svc.plate}<div class="sub">${svc.model || ""}</div></td>
                 <td>${svc.type}</td>
@@ -1124,16 +1191,12 @@
                 <td><span class="badge b-${svc.status}">${statusLabel(svc.status)}</span></td>
               </tr>`;
           } else {
-            tableHtml += `
-              <tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;">
+            tableHtml += `<tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;">
                 <td style="color: #9a9aa0;">${slotTime}</td>
-                <td colspan="6" style="color: #9a9aa0; font-style: italic;">
-                  <span style="font-size: 11px;">+ Available Arrival Slot (Click to book)</span>
-                </td>
+                <td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot (Click to book)</span></td>
               </tr>`;
           }
         });
-
         document.querySelector("#tbl tbody").innerHTML = tableHtml;
         document.getElementById("tableCount").textContent = dayServices.length;
 
@@ -1177,12 +1240,6 @@
       function refresh() {
         google.script.run.withSuccessHandler(render).getState();
       }
-      function reset() {
-        google.script.run
-          .withSuccessHandler(render)
-          .withFailureHandler(onError)
-          .resetDemo();
-      }
       function onError(err) {
         alert(String(err).replace("Error: ", ""));
       }
@@ -1215,7 +1272,8 @@
 
       function openModal(bay, start) {
         picked = { bay, start, date: currentDate() };
-        const bayName = STATE.bays.find((b) => b.id === bay).name;
+        const bayObj = STATE.bays.find((b) => b.id === bay);
+        const bayName = bayObj ? bayObj.name : "N/A";
         document.getElementById("slotInfo").textContent =
           `${new Date(picked.date).toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} · ${bayName}`;
         [
@@ -1260,7 +1318,6 @@
           start: val("f_start"),
           arrival: val("f_apptTime"),
         };
-
         if (
           !f.start ||
           !f.arrival ||
@@ -1272,16 +1329,13 @@
           alert("Please fill mandatory fields.");
           return;
         }
-
         const dur = toMin(val("f_end")) - toMin(f.start);
         if (dur <= 0) {
           alert("End time must be after start time.");
           return;
         }
-
         btn.disabled = true;
         btn.textContent = "Booking...";
-
         const p = {
           date: picked.date,
           bay: picked.bay,
@@ -1303,7 +1357,6 @@
           assigneeContact: val("f_assContact"),
           remarks: val("f_remarks"),
         };
-
         google.script.run
           .withSuccessHandler((s) => {
             render(s);
@@ -1333,19 +1386,13 @@
 
       google.script.run
         .withSuccessHandler(function (models) {
-          const modelSelect = document.getElementById("f_model");
-          modelSelect.innerHTML = '<option value="">— Select model —</option>';
-          (models || []).forEach((m) => {
-            const opt = document.createElement("option");
-            opt.value = m;
-            opt.textContent = m;
-            modelSelect.appendChild(opt);
-          });
+          ALL_MODELS = models || []; // Store models for matching logic
         })
         .getSkuModels();
 
       updateDateChip();
       refresh();
+      loadCustomerBase(); // Load customer data for fuzzy matching
       setInterval(refresh, 60000);
     </script>
   </body>
