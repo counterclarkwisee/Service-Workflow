@@ -15,7 +15,7 @@ const AppointmentService = (function () {
     // Fetch mapping from data_fields sheet
     const serviceData = DataFieldsRepo.getMapping();
 
-    // NEW: Fetch dynamic Source list from Column K
+    // Fetch dynamic Source list from Column K
     const sources = DataFieldsRepo.getSourceList();
 
     // Fetch GJ specific list from the repository
@@ -86,45 +86,75 @@ const AppointmentService = (function () {
       serviceMapping: serviceData.requests,
       skuModels: skuModels,
       gjCommonJobs: gjCommonJobs,
-      sources: sources, // Sent to UI for the dynamic dropdown
+      sources: sources,
     };
   }
 
   /**
-   * Matches KM Series (stripping "CHECK UP"), Model, and Branch.
-   * Returns minutes from Column G.
+   * BULLETPROOF MATCHING:
+   * Strips spaces, commas, and "CHECK UP" from both DB and User Input to ensure a 100% match.
    */
   function getRequiredRepairTime(model, kmSeries) {
+    console.log(
+      `[BACKEND] getRequiredRepairTime called. Model: "${model}", KM Series: "${kmSeries}"`,
+    );
+
     const allRequests = PMSServiceRequestRepo.listAll();
     const branch = BRANCH_CODE.toUpperCase();
 
-    // Logic: "1,000 KM CHECK UP" -> "1,000 KM"
-    const cleanedKm = String(kmSeries || "")
-      .toUpperCase()
-      .replace("CHECK UP", "")
-      .trim();
+    console.log(
+      `[BACKEND] Fetched ${allRequests.length} rows from PMSServiceRequestRepo. Branch: "${branch}"`,
+    );
 
+    // Helper function to crush strings down to their core (e.g. "40,000 KM CHECK UP" -> "40000KM")
+    const normalize = (str) => {
+      return String(str || "")
+        .toUpperCase()
+        .replace(/CHECK\s*UP/g, "") // Removes "CHECK UP" or "CHECKUP"
+        .replace(/,/g, "") // Removes commas
+        .replace(/\s+/g, ""); // Removes ALL spaces
+    };
+
+    const targetKm = normalize(kmSeries);
     const targetModel = String(model || "")
       .toUpperCase()
       .trim();
 
+    console.log(
+      `[BACKEND] Normalized Search Params -> Target KM: "${targetKm}", Target Model: "${targetModel}"`,
+    );
+
     const match = allRequests.find((r) => {
-      const rowKm = String(r.km_series || "")
-        .toUpperCase()
-        .trim();
-      const rowModel = String(r.model || "")
-        .toUpperCase()
-        .trim();
+      const rowKm = normalize(r.km_series); // Normalize the DB row exactly the same way
+      const rowModelStr = String(r.model || "").toUpperCase();
       const rowBranch = String(r.branch || "").toUpperCase();
 
-      return (
-        rowKm === cleanedKm &&
-        rowModel === targetModel &&
-        rowBranch.indexOf(branch) !== -1
-      );
+      // Handle comma-separated models: "FORTUNER, HILUX, INNOVA"
+      const modelsArray = rowModelStr.split(",").map((m) => m.trim());
+
+      const isMatch =
+        rowKm === targetKm &&
+        modelsArray.includes(targetModel) &&
+        rowBranch.indexOf(branch) !== -1;
+
+      if (isMatch) {
+        console.log(
+          `[BACKEND] MATCH FOUND in DB! DB Row -> KM: "${r.km_series}", Model: "${r.model}", Branch: "${r.branch}", Time: "${r.repair_time}"`,
+        );
+      }
+
+      return isMatch;
     });
 
-    return match ? Number(match.repair_time) : 60;
+    if (match) {
+      // Extract only numbers from the DB just in case it says "30 mins" instead of "30"
+      const timeDigits = String(match.repair_time).replace(/[^0-9]/g, "");
+      console.log(`[BACKEND] Returning extracted time: ${timeDigits} minutes.`);
+      return timeDigits ? Number(timeDigits) : 60;
+    }
+
+    console.log(`[BACKEND] NO MATCH FOUND. Returning fallback 60 minutes.`);
+    return 60; // Fallback
   }
 
   function _getConflictingBayName(bayId, date, startTime) {
@@ -182,7 +212,7 @@ const AppointmentService = (function () {
       appointment_date: p.date,
       scheduled_arrival_time: arrivalTime,
       assigned_advisor_name: p.advisor || "",
-      source: p.source || "", // Updated to take dynamic dropdown value
+      source: p.source || "",
       status: "booked",
       assignee_last_name: p.assigneeLast || "",
       assignee_first_name: p.assigneeFirst || "",

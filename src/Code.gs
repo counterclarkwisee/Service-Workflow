@@ -83,3 +83,7 @@ function bookService(payload) {
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
+
+function getRequiredRepairTime(model, kmSeries) {
+  return AppointmentService.getRequiredRepairTime(model, kmSeries);
+}

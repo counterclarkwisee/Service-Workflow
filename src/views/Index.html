@@ -403,14 +403,17 @@
       .s-in_service {
         background: #fff4e0;
         border-color: #f59e0b;
+        color: #92400e;
       }
       .s-awaiting_parts {
         background: #fdecee;
         border-color: #eb0a1e;
+        color: #a30714;
       }
       .s-done {
         background: #e6f4ea;
         border-color: #1e8e3e;
+        color: #0f5c26;
       }
       .modal {
         position: fixed;
@@ -837,7 +840,7 @@
               <div class="field">
                 <label>Vehicle Model</label>
                 <select id="f_model">
-                  <option value="">— Loading models... —</option>
+                  <option value="">— Select model —</option>
                 </select>
               </div>
               <div class="field optional">
@@ -1114,31 +1117,56 @@
         }
       }
 
-      // AUTO REPAIR TIME LOOKUP
-      document.getElementById("f_type").addEventListener("change", function () {
+      // --- AUTO REPAIR TIME LOOKUP ---
+      function fetchAndApplyRepairTime() {
         const category = document.getElementById("f_category").value;
         const model = document.getElementById("f_model").value;
-        const kmSeries = this.value;
+        const kmSeries = document.getElementById("f_type").value;
+
+        console.log(`[FRONTEND] Triggered fetchAndApplyRepairTime.`);
+        console.log(
+          `[FRONTEND] Category: "${category}", Model: "${model}", KM Series: "${kmSeries}"`,
+        );
 
         if ((category === "EM" || category === "PMS") && model && kmSeries) {
-          // Clean KM Series (strip "CHECK UP")
-          const cleanedKm = kmSeries
-            .toUpperCase()
-            .replace("CHECK UP", "")
-            .trim();
+          console.log(`[FRONTEND] Conditions met. Sending data to backend...`);
 
           google.script.run
             .withSuccessHandler((minutes) => {
-              currentDuration = parseInt(minutes);
+              console.log(
+                `[FRONTEND] Success! Backend returned: ${minutes} minutes.`,
+              );
+
+              // 1. Update the global duration state
+              currentDuration = parseInt(minutes, 10);
+
+              // 2. Format and update the badge (e.g., "30m" or "1h 30m")
               const h = Math.floor(currentDuration / 60);
               const m = currentDuration % 60;
               document.getElementById("f_durPreview").textContent =
                 h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+
+              // 3. Automatically calculate and update the "Time To" field
               updateEndTimeFromStart();
             })
-            .getRequiredRepairTime(model, cleanedKm);
+            .withFailureHandler((error) => {
+              console.error(`[FRONTEND] Backend Error:`, error);
+            })
+            .getRequiredRepairTime(model, kmSeries);
+        } else {
+          console.log(
+            `[FRONTEND] Skipped fetch. Missing Category, Model, or KM Series.`,
+          );
         }
-      });
+      }
+
+      // Trigger the lookup if the user changes the Service Request OR the Vehicle Model
+      document
+        .getElementById("f_type")
+        .addEventListener("change", fetchAndApplyRepairTime);
+      document
+        .getElementById("f_model")
+        .addEventListener("change", fetchAndApplyRepairTime);
 
       function showToast(msg, type = "success") {
         const toast = document.getElementById("toast");
@@ -1233,7 +1261,7 @@
       }
 
       function render(s) {
-        // GUARD CLAUSE: Preserve user inputs if the modal is currently open
+        // GUARD CLAUSE: Do not refresh dropdowns or reset state if the modal is open
         if (document.getElementById("modal").classList.contains("show")) return;
 
         STATE = s;
@@ -1377,7 +1405,7 @@
           "f_source",
         ].forEach((id) => (document.getElementById(id).value = ""));
         document.getElementById("f_apptTime").value = start;
-        currentDuration = 60;
+        currentDuration = 60; // Reset to default
         document.getElementById("f_durPreview").textContent = "1h";
         syncWorkshopFromAppt();
         document.getElementById("serviceRequestContainer").style.display =
