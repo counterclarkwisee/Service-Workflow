@@ -37,18 +37,11 @@
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         border-top: 3px solid #eb0a1e;
       }
-      .filters-left {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        flex-wrap: wrap;
-        justify-self: start;
-      }
+      .filters-left,
       .filters-right {
         display: flex;
         align-items: center;
         gap: 14px;
-        justify-self: end;
       }
       .filter {
         display: flex;
@@ -253,6 +246,8 @@
         font-size: 11px;
         margin-top: 2px;
       }
+
+      /* TIMELINE STYLES FOR GOOGLE MEET LOOK */
       .occupied-row td {
         padding: 12px 14px !important;
         font-weight: 500;
@@ -267,6 +262,7 @@
         border-bottom: 1px dashed #ececef !important;
         padding: 8px 14px !important;
       }
+
       .badge {
         display: inline-block;
         padding: 3px 9px;
@@ -297,6 +293,7 @@
         border-color: #1e8e3e;
         color: #0f5c26;
       }
+
       .grid-wrap {
         overflow: auto;
         height: 100%;
@@ -410,6 +407,7 @@
       .s-awaiting_parts {
         background: #fdecee;
         border-color: #eb0a1e;
+        color: #a30714;
       }
       .s-done {
         background: #e6f4ea;
@@ -536,6 +534,43 @@
         cursor: not-allowed;
         border-style: dashed;
       }
+
+      /* DURATION STEPPER STYLES */
+      .duration-stepper {
+        display: flex;
+        align-items: center;
+        background: #fdecee;
+        color: #eb0a1e;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #f9d5d8;
+      }
+      .step-btn {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-weight: bold;
+        user-select: none;
+        transition: background 0.2s;
+      }
+      .step-btn:hover {
+        background: #f9d5d8;
+      }
+      .dur-display {
+        padding: 0 10px;
+        font-weight: 600;
+        font-size: 12px;
+        min-width: 45px;
+        text-align: center;
+        border-left: 1px solid #f9d5d8;
+        border-right: 1px solid #f9d5d8;
+      }
+      input[type="time"]:disabled {
+        background-color: #f4f4f6;
+        color: #9a9aa0;
+        cursor: not-allowed;
+        border-style: dashed;
+      }
+
       .timerange {
         display: flex;
         align-items: center;
@@ -802,7 +837,9 @@
             <div class="row2">
               <div class="field">
                 <label>Vehicle Model</label>
-                <input id="f_model" placeholder="Vehicle model..." />
+                <select id="f_model">
+                  <option value="">— Loading models... —</option>
+                </select>
               </div>
               <div class="field optional">
                 <label>Year</label><input id="f_year" />
@@ -858,10 +895,20 @@
             <div class="field">
               <label>Workshop Schedule (Bay Entry)</label>
               <div class="timerange">
-                <input type="time" id="f_start" step="900" />
+                <input
+                  type="time"
+                  id="f_start"
+                  onchange="updateEndTimeFromStart()"
+                  step="900"
+                />
                 <span class="dash">–</span>
-                <input type="time" id="f_end" step="900" />
-                <span class="durpreview" id="f_durPreview">1h</span>
+                <input type="time" id="f_end" disabled />
+
+                <div class="duration-stepper">
+                  <div class="step-btn" onclick="adjustDuration(-30)">−</div>
+                  <div class="dur-display" id="f_durPreview">1h</div>
+                  <div class="step-btn" onclick="adjustDuration(30)">+</div>
+                </div>
               </div>
             </div>
           </div>
@@ -917,7 +964,6 @@
         "16:30",
         "17:00",
       ];
-
       const FULL_SCHEDULE_SLOTS = [
         "06:00",
         "06:30",
@@ -949,14 +995,42 @@
         source = "Inbound",
         view = "both",
         ALL_CUSTOMERS = [],
-        ALL_MODELS = [];
+        ALL_MODELS = [],
+        currentDuration = 60;
 
       const today = new Date().toLocaleDateString("en-CA", {
         timeZone: "Asia/Manila",
       });
       document.getElementById("f_date").value = today;
 
-      // --- CUSTOMER FUZZY SEARCH LOGIC ---
+      // --- STEPPER LOGIC ---
+      function updateEndTimeFromStart() {
+        const startVal = document.getElementById("f_start").value;
+        if (!startVal) return;
+        const startMin = toMin(startVal);
+        const endMin = startMin + currentDuration;
+        document.getElementById("f_end").value = fromMin(endMin);
+      }
+
+      function adjustDuration(delta) {
+        if (currentDuration + delta < 30) return;
+        currentDuration += delta;
+        const h = Math.floor(currentDuration / 60);
+        const m = currentDuration % 60;
+        document.getElementById("f_durPreview").textContent =
+          h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+        updateEndTimeFromStart();
+      }
+
+      function syncWorkshopFromAppt() {
+        const apptVal = document.getElementById("f_apptTime").value;
+        if (!apptVal) return;
+        const workshopStartMins = toMin(apptVal) + 30;
+        document.getElementById("f_start").value = fromMin(workshopStartMins);
+        updateEndTimeFromStart();
+      }
+
+      // --- CUSTOMER FUZZY SEARCH ---
       function loadCustomerBase() {
         google.script.run
           .withSuccessHandler((data) => {
@@ -971,26 +1045,20 @@
       nameInput.addEventListener("input", function () {
         const val = this.value.toUpperCase();
         resultsDiv.innerHTML = "";
-
         if (!val || val.length < 2) {
           resultsDiv.style.display = "none";
           return;
         }
-
         const matches = ALL_CUSTOMERS.filter(
           (c) =>
             c["Customer Name"] &&
             c["Customer Name"].toString().toUpperCase().includes(val),
         ).slice(0, 10);
-
         if (matches.length > 0) {
           matches.forEach((customer) => {
             const div = document.createElement("div");
             div.className = "ac-item";
-            div.innerHTML = `
-              <span class="ac-name">${customer["Customer Name"]}</span>
-              <span class="ac-sub">${customer["Plate No."] || "N/A"} | ${customer["Model"] || ""}</span>
-            `;
+            div.innerHTML = `<span class="ac-name">${customer["Customer Name"]}</span><span class="ac-sub">${customer["Plate No."] || "N/A"} | ${customer["Model"] || ""}</span>`;
             div.onclick = () => selectCustomer(customer);
             resultsDiv.appendChild(div);
           });
@@ -1005,18 +1073,6 @@
         document.getElementById("f_contact").value = c["Mobile"] || "";
         document.getElementById("f_plate").value = c["Plate No."] || "";
         document.getElementById("f_csNo").value = c["CS Number"] || "";
-
-        const fullVariantString = (c["Model"] || "").toUpperCase();
-        let matchedModel = "";
-
-        if (fullVariantString && ALL_MODELS.length > 0) {
-          matchedModel =
-            ALL_MODELS.find((m) =>
-              fullVariantString.includes(m.toUpperCase()),
-            ) || "";
-        }
-        document.getElementById("f_model").value = matchedModel;
-
         resultsDiv.style.display = "none";
       }
 
@@ -1026,13 +1082,10 @@
         }
       });
 
-      // --- RELATIONAL SERVICE LOGIC ---
       function updateServiceRequests() {
         const cat = document.getElementById("f_category").value;
         const reqSelect = document.getElementById("f_type");
         const container = document.getElementById("serviceRequestContainer");
-
-        // Show container for EM, PMS, or GJ
         const allowed = ["EM", "PMS", "GJ"];
         if (allowed.includes(cat)) {
           container.style.display = "block";
@@ -1042,13 +1095,11 @@
             '<option value="">— Select Category First —</option>';
           return;
         }
-
         if (!STATE || !STATE.serviceMapping || !STATE.serviceMapping[cat]) {
           reqSelect.innerHTML =
             '<option value="">— No requests found —</option>';
           return;
         }
-
         const requests = STATE.serviceMapping[cat];
         reqSelect.innerHTML = '<option value="">— Select Request —</option>';
         requests.forEach((req) => {
@@ -1075,16 +1126,6 @@
           .padStart(2, "0");
         const m = (mins % 60).toString().padStart(2, "0");
         return `${h}:${m}`;
-      }
-
-      function syncWorkshopFromAppt() {
-        const apptVal = document.getElementById("f_apptTime").value;
-        if (!apptVal) return;
-        const workshopStartMins = toMin(apptVal) + 30;
-        document.getElementById("f_start").value = fromMin(workshopStartMins);
-        const workshopEndMins = workshopStartMins + 60;
-        document.getElementById("f_end").value = fromMin(workshopEndMins);
-        updateDurPreview();
       }
 
       function currentDate() {
@@ -1163,13 +1204,10 @@
 
       function render(s) {
         STATE = s;
-        if (s.skuModels) ALL_MODELS = s.skuModels;
-
         const adv = document.getElementById("f_advisor");
         adv.innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
-
         const catSelect = document.getElementById("f_category");
         catSelect.innerHTML = '<option value="">— Select Category —</option>';
         (s.serviceCategories || []).forEach((cat) => {
@@ -1178,7 +1216,6 @@
           opt.textContent = cat;
           catSelect.appendChild(opt);
         });
-
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
         const d = currentDate();
@@ -1266,17 +1303,6 @@
           .classList.toggle("on", v === "Outbound");
       }
 
-      function updateDurPreview() {
-        const s = document.getElementById("f_start").value,
-          e = document.getElementById("f_end").value;
-        if (!s || !e) return;
-        const mins = toMin(e) - toMin(s);
-        const h = Math.floor(mins / 60),
-          m = mins % 60;
-        document.getElementById("f_durPreview").textContent =
-          mins > 0 ? (h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`) : "⚠";
-      }
-
       function openModalWithDefaultsAt(time) {
         const defaultBay = STATE && STATE.bays.length ? STATE.bays[0].id : "";
         openModal(defaultBay, time);
@@ -1304,13 +1330,12 @@
           "f_type",
         ].forEach((id) => (document.getElementById(id).value = ""));
         document.getElementById("f_apptTime").value = start;
+        currentDuration = 60; // Reset to default
+        document.getElementById("f_durPreview").textContent = "1h";
         syncWorkshopFromAppt();
         setSource("Inbound");
-
-        // Hide relational field by default
         document.getElementById("serviceRequestContainer").style.display =
           "none";
-
         document.getElementById("modal").classList.add("show");
         setTimeout(() => document.getElementById("f_lastName").focus(), 50);
       }
@@ -1339,18 +1364,13 @@
           alert("Please fill mandatory fields.");
           return;
         }
-        const dur = toMin(val("f_end")) - toMin(f.start);
-        if (dur <= 0) {
-          alert("End time must be after start time.");
-          return;
-        }
         btn.disabled = true;
         btn.textContent = "Booking...";
         const p = {
           date: picked.date,
           bay: picked.bay,
           start: f.start,
-          dur: dur,
+          dur: currentDuration,
           apptArrival: f.arrival,
           lastName: f.lastName,
           firstName: "",
@@ -1384,17 +1404,9 @@
         refresh();
       });
       document.getElementById("f_status").addEventListener("change", refresh);
-      document
-        .getElementById("f_start")
-        .addEventListener("change", updateDurPreview);
-      document
-        .getElementById("f_end")
-        .addEventListener("change", updateDurPreview);
       document.getElementById("modal").addEventListener("click", (e) => {
         if (e.target.id === "modal") closeModal();
       });
-
-      // SkuModels are now handled by getState() via render()
 
       updateDateChip();
       refresh();
