@@ -22,14 +22,14 @@ const AppointmentService = (function () {
       .filter((name) => name)
       .sort();
 
-    // --- NEW: Fetch SKU Models directly from the 'sku' sheet ---
+    // NEW: Fetch SKU Models using the Repo pattern (or direct fetch if repo not yet made)
+    // Pulls Column A from the 'sku' sheet
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const skuSheet = ss.getSheetByName("sku");
     let skuModels = [];
     if (skuSheet) {
       const lastRow = skuSheet.getLastRow();
       if (lastRow > 1) {
-        // Pulls Column A (Models) starting from row 2
         const skuData = skuSheet.getRange("A2:A" + lastRow).getValues();
         skuModels = skuData
           .map((r) => String(r[0]).trim())
@@ -37,7 +37,6 @@ const AppointmentService = (function () {
           .sort();
       }
     }
-    // ---------------------------------------------------------
 
     const apptById = {};
     appointments.forEach(function (a) {
@@ -80,8 +79,27 @@ const AppointmentService = (function () {
       customerNames: uniqueCustomerNames,
       serviceCategories: serviceData.categories,
       serviceMapping: serviceData.requests,
-      skuModels: skuModels, // Sent to the UI for fuzzy matching
+      skuModels: skuModels,
     };
+  }
+
+  /**
+   * NEW: Fetches required repair time from PMSServiceRequestRepo
+   * Logic: Matches KM Series (Col A), Model (Col C), and Branch (Col D)
+   */
+  function getRequiredRepairTime(model, kmSeries) {
+    const allRequests = PMSServiceRequestRepo.listAll();
+    const branch = BRANCH_CODE.toUpperCase();
+
+    const match = allRequests.find(
+      (r) =>
+        String(r.km_series).toUpperCase() === String(kmSeries).toUpperCase() &&
+        String(r.model).toUpperCase() === String(model).toUpperCase() &&
+        String(r.branch).toUpperCase().includes(branch),
+    );
+
+    // Return minutes (Time in Col G * 60). Default to 60 mins.
+    return match ? Number(match.repair_time) * 60 : 60;
   }
 
   function _getConflictingBayName(bayId, date, startTime) {
@@ -204,5 +222,6 @@ const AppointmentService = (function () {
   return {
     getState: getState,
     bookAppointment: bookAppointment,
+    getRequiredRepairTime: getRequiredRepairTime,
   };
 })();

@@ -837,7 +837,7 @@
               <div class="field">
                 <label>Vehicle Model</label>
                 <select id="f_model">
-                  <option value="">— Loading models... —</option>
+                  <option value="">— Select model —</option>
                 </select>
               </div>
               <div class="field optional">
@@ -1073,17 +1073,14 @@
         document.getElementById("f_plate").value = c["Plate No."] || "";
         document.getElementById("f_csNo").value = c["CS Number"] || "";
 
-        // --- FUZZY MODEL MATCHING LOGIC ---
-        const variantFromMaster = (c["Model"] || "").toUpperCase();
-        let bestMatch = "";
-        if (variantFromMaster && ALL_MODELS.length > 0) {
-          // Check which SKU model is part of the variant name
-          bestMatch =
-            ALL_MODELS.find((m) =>
-              variantFromMaster.includes(m.toUpperCase()),
-            ) || "";
+        // --- NEW: FUZZY MODEL MATCHING ---
+        const variantStr = (c["Model"] || "").toUpperCase();
+        let matched = "";
+        if (variantStr && ALL_MODELS.length > 0) {
+          matched =
+            ALL_MODELS.find((m) => variantStr.includes(m.toUpperCase())) || "";
         }
-        document.getElementById("f_model").value = bestMatch;
+        document.getElementById("f_model").value = matched;
 
         resultsDiv.style.display = "none";
       }
@@ -1121,6 +1118,26 @@
           reqSelect.appendChild(opt);
         });
       }
+
+      // --- AUTO REPAIR TIME LOOKUP ---
+      document.getElementById("f_type").addEventListener("change", function () {
+        const category = document.getElementById("f_category").value;
+        const model = document.getElementById("f_model").value;
+        const kmSeries = this.value;
+
+        if ((category === "EM" || category === "PMS") && model && kmSeries) {
+          google.script.run
+            .withSuccessHandler((minutes) => {
+              currentDuration = minutes;
+              const h = Math.floor(currentDuration / 60);
+              const m = currentDuration % 60;
+              document.getElementById("f_durPreview").textContent =
+                h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+              updateEndTimeFromStart();
+            })
+            .getRequiredRepairTime(model, kmSeries);
+        }
+      });
 
       function showToast(msg, type = "success") {
         const toast = document.getElementById("toast");
@@ -1215,6 +1232,9 @@
       }
 
       function render(s) {
+        // FIX: Do not refresh dropdowns or reset state if the modal is open
+        if (document.getElementById("modal").classList.contains("show")) return;
+
         STATE = s;
         if (s.skuModels) {
           ALL_MODELS = s.skuModels;
@@ -1255,7 +1275,10 @@
           const svc = visible.find((x) => x.start === slotTime);
           if (svc) {
             tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;">
-                <td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td>
+                <td style="border-left: 4px solid #eb0a1e;">
+                  <strong>${svc.start}</strong>
+                  <div class="sub">30 min recep.</div>
+                </td>
                 <td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td>
                 <td>${svc.plate}<div class="sub">${svc.model || ""}</div></td>
                 <td>${svc.type}</td>
@@ -1354,7 +1377,7 @@
           "f_type",
         ].forEach((id) => (document.getElementById(id).value = ""));
         document.getElementById("f_apptTime").value = start;
-        currentDuration = 60; // Reset to default
+        currentDuration = 60;
         document.getElementById("f_durPreview").textContent = "1h";
         syncWorkshopFromAppt();
         setSource("Inbound");
