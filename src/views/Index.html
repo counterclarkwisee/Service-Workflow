@@ -868,25 +868,11 @@
 
             <div class="field">
               <label>Source</label>
-              <div class="pillgroup">
-                <button
-                  type="button"
-                  class="pillbtn on"
-                  id="src_in"
-                  onclick="setSource('Inbound')"
-                >
-                  <span class="dot"></span>Inbound
-                </button>
-                <button
-                  type="button"
-                  class="pillbtn"
-                  id="src_out"
-                  onclick="setSource('Outbound')"
-                >
-                  <span class="dot"></span>Outbound
-                </button>
-              </div>
+              <select id="f_source">
+                <option value="">— Loading Sources... —</option>
+              </select>
             </div>
+
             <div class="field">
               <label>Service Advisor</label>
               <select id="f_advisor"></select>
@@ -991,7 +977,6 @@
 
       let STATE = null,
         picked = null,
-        source = "Inbound",
         view = "both",
         ALL_CUSTOMERS = [],
         ALL_MODELS = [],
@@ -1073,7 +1058,7 @@
         document.getElementById("f_plate").value = c["Plate No."] || "";
         document.getElementById("f_csNo").value = c["CS Number"] || "";
 
-        // --- NEW: FUZZY MODEL MATCHING ---
+        // FUZZY MODEL MATCHING
         const variantStr = (c["Model"] || "").toUpperCase();
         let matched = "";
         if (variantStr && ALL_MODELS.length > 0) {
@@ -1109,7 +1094,7 @@
         reqSelect.innerHTML = '<option value="">— Select Request —</option>';
         let requests = [];
 
-        // GJ Population logic: uses separate list instead of mapping
+        // GJ Population logic
         if (cat === "GJ") {
           requests = STATE.gjCommonJobs || [];
         } else if (STATE && STATE.serviceMapping && STATE.serviceMapping[cat]) {
@@ -1129,23 +1114,29 @@
         }
       }
 
-      // --- AUTO REPAIR TIME LOOKUP ---
+      // AUTO REPAIR TIME LOOKUP
       document.getElementById("f_type").addEventListener("change", function () {
         const category = document.getElementById("f_category").value;
         const model = document.getElementById("f_model").value;
         const kmSeries = this.value;
 
         if ((category === "EM" || category === "PMS") && model && kmSeries) {
+          // Clean KM Series (strip "CHECK UP")
+          const cleanedKm = kmSeries
+            .toUpperCase()
+            .replace("CHECK UP", "")
+            .trim();
+
           google.script.run
             .withSuccessHandler((minutes) => {
-              currentDuration = minutes;
+              currentDuration = parseInt(minutes);
               const h = Math.floor(currentDuration / 60);
               const m = currentDuration % 60;
               document.getElementById("f_durPreview").textContent =
                 h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
               updateEndTimeFromStart();
             })
-            .getRequiredRepairTime(model, kmSeries);
+            .getRequiredRepairTime(model, cleanedKm);
         }
       });
 
@@ -1242,7 +1233,7 @@
       }
 
       function render(s) {
-        // GUARD CLAUSE: Do not refresh dropdowns or reset state if the modal is open
+        // GUARD CLAUSE: Preserve user inputs if the modal is currently open
         if (document.getElementById("modal").classList.contains("show")) return;
 
         STATE = s;
@@ -1270,6 +1261,14 @@
           catSelect.appendChild(opt);
         });
 
+        // POPULATE SOURCE DROPDOWN
+        const sourceSelect = document.getElementById("f_source");
+        sourceSelect.innerHTML =
+          '<option value="">— Select Source —</option>' +
+          (s.sources || [])
+            .map((src) => `<option value="${src}">${src}</option>`)
+            .join("");
+
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
         const d = currentDate();
@@ -1285,7 +1284,10 @@
           const svc = visible.find((x) => x.start === slotTime);
           if (svc) {
             tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;">
-                <td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td>
+                <td style="border-left: 4px solid #eb0a1e;">
+                  <strong>${svc.start}</strong>
+                  <div class="sub">30 min recep.</div>
+                </td>
                 <td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td>
                 <td>${svc.plate}<div class="sub">${svc.model || ""}</div></td>
                 <td>${svc.type}</td>
@@ -1347,16 +1349,6 @@
         alert(String(err).replace("Error: ", ""));
       }
 
-      function setSource(v) {
-        source = v;
-        document
-          .getElementById("src_in")
-          .classList.toggle("on", v === "Inbound");
-        document
-          .getElementById("src_out")
-          .classList.toggle("on", v === "Outbound");
-      }
-
       function openModalWithDefaultsAt(time) {
         const defaultBay = STATE && STATE.bays.length ? STATE.bays[0].id : "";
         openModal(defaultBay, time);
@@ -1382,12 +1374,12 @@
           "f_remarks",
           "f_category",
           "f_type",
+          "f_source",
         ].forEach((id) => (document.getElementById(id).value = ""));
         document.getElementById("f_apptTime").value = start;
-        currentDuration = 60; // Reset to default
+        currentDuration = 60;
         document.getElementById("f_durPreview").textContent = "1h";
         syncWorkshopFromAppt();
-        setSource("Inbound");
         document.getElementById("serviceRequestContainer").style.display =
           "none";
         document.getElementById("modal").classList.add("show");
@@ -1413,6 +1405,7 @@
           advisor: val("f_advisor"),
           start: val("f_start"),
           arrival: val("f_apptTime"),
+          source: val("f_source"),
         };
         if (!f.start || !f.arrival || !f.lastName || !f.contact || !f.plate) {
           alert("Please fill mandatory fields.");
@@ -1434,7 +1427,7 @@
           model: f.model,
           year: val("f_year"),
           type: f.type,
-          source: source,
+          source: f.source,
           advisor: f.advisor,
           assigneeLast: val("f_assLast"),
           assigneeFirst: val("f_assFirst"),

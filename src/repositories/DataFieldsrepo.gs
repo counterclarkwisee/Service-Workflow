@@ -56,5 +56,25 @@ const DataFieldsRepo = (function () {
     };
   }
 
-  return { getMapping: getMapping };
+  /**
+   * NEW: Fetches the Source list from Column K (11), starting at Row 4
+   */
+  function getSourceList() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return [];
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 4) return [];
+
+    // Column K is 11, get values from row 4 down
+    const values = sheet.getRange(4, 11, lastRow - 3, 1).getValues();
+
+    return values.map((r) => String(r[0] || "").trim()).filter((v) => v !== "");
+  }
+
+  return {
+    getMapping: getMapping,
+    getSourceList: getSourceList,
+  };
 })();
