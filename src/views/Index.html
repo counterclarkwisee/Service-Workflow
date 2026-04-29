@@ -837,7 +837,7 @@
               <div class="field">
                 <label>Vehicle Model</label>
                 <select id="f_model">
-                  <option value="">— Select model —</option>
+                  <option value="">— Loading models... —</option>
                 </select>
               </div>
               <div class="field optional">
@@ -1096,6 +1096,7 @@
         const reqSelect = document.getElementById("f_type");
         const container = document.getElementById("serviceRequestContainer");
         const allowed = ["EM", "PMS", "GJ"];
+
         if (allowed.includes(cat)) {
           container.style.display = "block";
         } else {
@@ -1104,19 +1105,28 @@
             '<option value="">— Select Category First —</option>';
           return;
         }
-        if (!STATE || !STATE.serviceMapping || !STATE.serviceMapping[cat]) {
+
+        reqSelect.innerHTML = '<option value="">— Select Request —</option>';
+        let requests = [];
+
+        // GJ Population logic: uses separate list instead of mapping
+        if (cat === "GJ") {
+          requests = STATE.gjCommonJobs || [];
+        } else if (STATE && STATE.serviceMapping && STATE.serviceMapping[cat]) {
+          requests = STATE.serviceMapping[cat];
+        }
+
+        if (requests.length === 0) {
           reqSelect.innerHTML =
             '<option value="">— No requests found —</option>';
-          return;
+        } else {
+          requests.forEach((req) => {
+            const opt = document.createElement("option");
+            opt.value = req;
+            opt.textContent = req;
+            reqSelect.appendChild(opt);
+          });
         }
-        const requests = STATE.serviceMapping[cat];
-        reqSelect.innerHTML = '<option value="">— Select Request —</option>';
-        requests.forEach((req) => {
-          const opt = document.createElement("option");
-          opt.value = req;
-          opt.textContent = req;
-          reqSelect.appendChild(opt);
-        });
       }
 
       // --- AUTO REPAIR TIME LOOKUP ---
@@ -1232,7 +1242,7 @@
       }
 
       function render(s) {
-        // FIX: Do not refresh dropdowns or reset state if the modal is open
+        // GUARD CLAUSE: Do not refresh dropdowns or reset state if the modal is open
         if (document.getElementById("modal").classList.contains("show")) return;
 
         STATE = s;
@@ -1275,10 +1285,7 @@
           const svc = visible.find((x) => x.start === slotTime);
           if (svc) {
             tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;">
-                <td style="border-left: 4px solid #eb0a1e;">
-                  <strong>${svc.start}</strong>
-                  <div class="sub">30 min recep.</div>
-                </td>
+                <td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td>
                 <td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td>
                 <td>${svc.plate}<div class="sub">${svc.model || ""}</div></td>
                 <td>${svc.type}</td>
@@ -1377,7 +1384,7 @@
           "f_type",
         ].forEach((id) => (document.getElementById(id).value = ""));
         document.getElementById("f_apptTime").value = start;
-        currentDuration = 60;
+        currentDuration = 60; // Reset to default
         document.getElementById("f_durPreview").textContent = "1h";
         syncWorkshopFromAppt();
         setSource("Inbound");

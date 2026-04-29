@@ -15,6 +15,9 @@ const AppointmentService = (function () {
     // Fetch mapping from data_fields sheet
     const serviceData = DataFieldsRepo.getMapping();
 
+    // NEW: Fetch GJ specific list from the new repository
+    const gjCommonJobs = GJServiceRequestRepo.listCommonJobs();
+
     const customers = CustomerRepo.listAll();
     const uniqueCustomerNames = [
       ...new Set(customers.map((c) => c.customer_name)),
@@ -22,14 +25,14 @@ const AppointmentService = (function () {
       .filter((name) => name)
       .sort();
 
-    // NEW: Fetch SKU Models using the Repo pattern (or direct fetch if repo not yet made)
-    // Pulls Column A from the 'sku' sheet
+    // NEW: Fetch SKU Models directly from the 'sku' sheet ---
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const skuSheet = ss.getSheetByName("sku");
     let skuModels = [];
     if (skuSheet) {
       const lastRow = skuSheet.getLastRow();
       if (lastRow > 1) {
+        // Pulls Column A (Models) starting from row 2
         const skuData = skuSheet.getRange("A2:A" + lastRow).getValues();
         skuModels = skuData
           .map((r) => String(r[0]).trim())
@@ -80,6 +83,7 @@ const AppointmentService = (function () {
       serviceCategories: serviceData.categories,
       serviceMapping: serviceData.requests,
       skuModels: skuModels,
+      gjCommonJobs: gjCommonJobs, // Sent to the UI for GJ population
     };
   }
 
