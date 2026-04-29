@@ -407,7 +407,6 @@
       .s-awaiting_parts {
         background: #fdecee;
         border-color: #eb0a1e;
-        color: #a30714;
       }
       .s-done {
         background: #e6f4ea;
@@ -1073,6 +1072,19 @@
         document.getElementById("f_contact").value = c["Mobile"] || "";
         document.getElementById("f_plate").value = c["Plate No."] || "";
         document.getElementById("f_csNo").value = c["CS Number"] || "";
+
+        // --- FUZZY MODEL MATCHING LOGIC ---
+        const variantFromMaster = (c["Model"] || "").toUpperCase();
+        let bestMatch = "";
+        if (variantFromMaster && ALL_MODELS.length > 0) {
+          // Check which SKU model is part of the variant name
+          bestMatch =
+            ALL_MODELS.find((m) =>
+              variantFromMaster.includes(m.toUpperCase()),
+            ) || "";
+        }
+        document.getElementById("f_model").value = bestMatch;
+
         resultsDiv.style.display = "none";
       }
 
@@ -1204,10 +1216,21 @@
 
       function render(s) {
         STATE = s;
+        if (s.skuModels) {
+          ALL_MODELS = s.skuModels;
+          const modelSelect = document.getElementById("f_model");
+          modelSelect.innerHTML =
+            '<option value="">— Select model —</option>' +
+            ALL_MODELS.map((m) => `<option value="${m}">${m}</option>`).join(
+              "",
+            );
+        }
+
         const adv = document.getElementById("f_advisor");
         adv.innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
+
         const catSelect = document.getElementById("f_category");
         catSelect.innerHTML = '<option value="">— Select Category —</option>';
         (s.serviceCategories || []).forEach((cat) => {
@@ -1216,6 +1239,7 @@
           opt.textContent = cat;
           catSelect.appendChild(opt);
         });
+
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
         const d = currentDate();

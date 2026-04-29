@@ -12,7 +12,7 @@ const AppointmentService = (function () {
     const services = ServiceRepo.listAll();
     const appointments = AppointmentRepo.listAll();
 
-    // NEW: Fetch mapping from data_fields sheet
+    // Fetch mapping from data_fields sheet
     const serviceData = DataFieldsRepo.getMapping();
 
     const customers = CustomerRepo.listAll();
@@ -21,6 +21,23 @@ const AppointmentService = (function () {
     ]
       .filter((name) => name)
       .sort();
+
+    // --- NEW: Fetch SKU Models directly from the 'sku' sheet ---
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const skuSheet = ss.getSheetByName("sku");
+    let skuModels = [];
+    if (skuSheet) {
+      const lastRow = skuSheet.getLastRow();
+      if (lastRow > 1) {
+        // Pulls Column A (Models) starting from row 2
+        const skuData = skuSheet.getRange("A2:A" + lastRow).getValues();
+        skuModels = skuData
+          .map((r) => String(r[0]).trim())
+          .filter((m) => m !== "" && m !== "null" && m !== "undefined")
+          .sort();
+      }
+    }
+    // ---------------------------------------------------------
 
     const apptById = {};
     appointments.forEach(function (a) {
@@ -61,9 +78,9 @@ const AppointmentService = (function () {
       }),
       servicesByDate: servicesByDate,
       customerNames: uniqueCustomerNames,
-      // NEW: Send Categories and the Map (Requests) to the UI
       serviceCategories: serviceData.categories,
       serviceMapping: serviceData.requests,
+      skuModels: skuModels, // Sent to the UI for fuzzy matching
     };
   }
 
@@ -137,7 +154,7 @@ const AppointmentService = (function () {
       appointment_id: apptId,
       created_at: now,
       created_by: user.email,
-      service_type: p.type || "", // This p.type is the 'Service Request'
+      service_type: p.type || "",
       estimated_duration_minutes: p.dur,
       current_duration_minutes: p.dur,
       original_start_time: p.start,
