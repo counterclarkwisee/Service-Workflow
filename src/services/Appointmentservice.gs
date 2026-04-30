@@ -130,6 +130,7 @@ const AppointmentService = (function () {
     const userEmail =
       user && user.email ? user.email : Session.getActiveUser().getEmail();
 
+    // 1. Conflict Check for Rescheduling
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const conflict = _getConflictingBayName(
@@ -139,11 +140,17 @@ const AppointmentService = (function () {
       );
       if (conflict) {
         throw new Error(
-          "Cannot reschedule: " + conflict + " is already booked.",
+          "Cannot reschedule: " +
+            conflict +
+            " is already booked at " +
+            p.newTime +
+            " on " +
+            p.newDate,
         );
       }
     }
 
+    // 2. Find row index
     let rowIndex = -1;
     for (let i = 1; i < apptData.length; i++) {
       if (apptData[i][0] === p.appointment_id) {
@@ -154,11 +161,30 @@ const AppointmentService = (function () {
 
     if (rowIndex === -1) throw new Error("Appointment ID not found.");
 
+    // 3. Update Status and Remarks (Cols O & P)
     apptSheet.getRange(rowIndex, 15).setValue(p.status);
     apptSheet.getRange(rowIndex, 16).setValue(p.status_remarks);
+
+    // 4. Update Confirmations (Cols Q & R)
+    // N-1D Confirmation (Column Q)
+    if (p.n1_conf === "Confirm") {
+      apptSheet.getRange(rowIndex, 17).setValue("CONFIRMED");
+    } else if (p.n1_conf) {
+      apptSheet.getRange(rowIndex, 17).setValue(p.n1_conf.toUpperCase());
+    }
+
+    // N-1H Confirmation (Column R)
+    if (p.h1_conf === "Confirm") {
+      apptSheet.getRange(rowIndex, 18).setValue("CONFIRMED");
+    } else if (p.h1_conf) {
+      apptSheet.getRange(rowIndex, 18).setValue(p.h1_conf.toUpperCase());
+    }
+
+    // 5. Update Audit Trail (Cols V & W)
     apptSheet.getRange(rowIndex, 22).setValue(new Date());
     apptSheet.getRange(rowIndex, 23).setValue(userEmail);
 
+    // 6. Handle Service Grid Cleanup
     if (p.status === "Canceled" || p.status === "Rescheduled") {
       const svcSheet = ss.getSheetByName("services");
       const svcData = svcSheet.getDataRange().getValues();
@@ -170,6 +196,7 @@ const AppointmentService = (function () {
       }
     }
 
+    // 7. Handle New Row Creation for Rescheduled
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const newP = {

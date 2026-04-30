@@ -937,7 +937,7 @@
               <div class="section-title">📞 Confirmation Status</div>
 
               <div class="field">
-                <label>N-1 Confirmation (1 Day Before)</label>
+                <label>N-1D Confirmation (1 Day Before)</label>
                 <div class="confirmation-grid">
                   <button
                     type="button"
@@ -1000,7 +1000,7 @@
               </div>
 
               <div class="field" style="margin-top: 20px">
-                <label>H-1 Confirmation (1 Hour Before)</label>
+                <label>N-1H Confirmation (1 Hour Before)</label>
                 <div class="confirmation-grid">
                   <button
                     type="button"
@@ -1785,6 +1785,8 @@
           newDate: newDate,
           newTime: newTime,
           category: val("f_category"),
+          n1_conf: selectedConfN1, // Added line
+          h1_conf: selectedConfH1, // Added line
         };
 
         const serverFunc =
