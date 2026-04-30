@@ -246,7 +246,6 @@
         font-size: 11px;
         margin-top: 2px;
       }
-
       .occupied-row td {
         padding: 12px 14px !important;
         font-weight: 500;
@@ -261,7 +260,6 @@
         border-bottom: 1px dashed #ececef !important;
         padding: 8px 14px !important;
       }
-
       .badge {
         display: inline-block;
         padding: 3px 9px;
@@ -292,7 +290,6 @@
         border-color: #1e8e3e;
         color: #0f5c26;
       }
-
       .grid-wrap {
         overflow: auto;
         height: 100%;
@@ -411,7 +408,6 @@
         background: #e6f4ea;
         border-color: #1e8e3e;
       }
-
       .modal {
         position: fixed;
         inset: 0;
@@ -536,7 +532,6 @@
         cursor: not-allowed;
         border-style: dashed;
       }
-
       .duration-stepper {
         display: flex;
         align-items: center;
@@ -571,7 +566,6 @@
         cursor: not-allowed;
         border-style: dashed;
       }
-
       .timerange {
         display: flex;
         align-items: center;
@@ -604,7 +598,6 @@
         min-width: 54px;
         text-align: center;
       }
-
       .confirmation-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -642,7 +635,6 @@
         background: #eb0a1e;
         box-shadow: inset 0 0 0 3px #fff;
       }
-
       .optional {
         font-size: 10px;
         font-weight: 500;
@@ -679,7 +671,6 @@
       .toast-error {
         background: #eb0a1e;
       }
-
       .ac-container {
         position: relative;
       }
@@ -936,127 +927,139 @@
             <div class="section">
               <div class="section-title">📞 Confirmation Status</div>
 
-              <div class="field">
-                <label>N-1D Confirmation (1 Day Before)</label>
-                <div class="confirmation-grid">
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="n1_confirm"
-                    onclick="setConfirmation('n1', 'Confirm')"
+              <div id="n1d_section_wrapper">
+                <div class="field">
+                  <label>N-1D Confirmation (1 Day Before)</label>
+                  <div class="confirmation-grid">
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="n1_confirm"
+                      onclick="setConfirmation('n1', 'Confirm')"
+                    >
+                      <span class="dot"></span>Confirm
+                    </button>
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="n1_no_response"
+                      onclick="setConfirmation('n1', 'No Response')"
+                    >
+                      <span class="dot"></span>No Response
+                    </button>
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="n1_reschedule"
+                      onclick="setConfirmation('n1', 'Rescheduled')"
+                    >
+                      <span class="dot"></span>Reschedule
+                    </button>
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="n1_canceled"
+                      onclick="setConfirmation('n1', 'Canceled')"
+                    >
+                      <span class="dot"></span>Canceled
+                    </button>
+                  </div>
+                  <div
+                    id="n1_reason_container"
+                    style="display: none; margin-top: 8px"
                   >
-                    <span class="dot"></span>Confirm
-                  </button>
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="n1_no_response"
-                    onclick="setConfirmation('n1', 'No Response')"
+                    <input
+                      type="text"
+                      id="f_n1_reason"
+                      placeholder="Type reason (Required for Reschedule/Canceled)*"
+                    />
+                  </div>
+                  <div
+                    id="n1_reschedule_container"
+                    style="display: none; margin-top: 8px"
                   >
-                    <span class="dot"></span>No Response
-                  </button>
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="n1_reschedule"
-                    onclick="setConfirmation('n1', 'Rescheduled')"
-                  >
-                    <span class="dot"></span>Reschedule
-                  </button>
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="n1_canceled"
-                    onclick="setConfirmation('n1', 'Canceled')"
-                  >
-                    <span class="dot"></span>Canceled
-                  </button>
-                </div>
-                <div
-                  id="n1_reason_container"
-                  style="display: none; margin-top: 8px"
-                >
-                  <input
-                    type="text"
-                    id="f_n1_reason"
-                    placeholder="Type reason (Required for Reschedule/Canceled)*"
-                  />
-                </div>
-                <div
-                  id="n1_reschedule_container"
-                  style="display: none; margin-top: 8px"
-                >
-                  <div class="row2">
-                    <div class="field">
-                      <label>New Date</label>
-                      <input type="date" id="f_n1_reschedule_date" />
-                    </div>
-                    <div class="field">
-                      <label>New Time (Arrival)</label>
-                      <input type="time" id="f_n1_reschedule_time" step="900" />
+                    <div class="row2">
+                      <div class="field">
+                        <label>New Date</label
+                        ><input type="date" id="f_n1_reschedule_date" />
+                      </div>
+                      <div class="field">
+                        <label>New Time (Arrival)</label
+                        ><input
+                          type="time"
+                          id="f_n1_reschedule_time"
+                          step="900"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="field" style="margin-top: 20px">
-                <label>N-1H Confirmation (1 Hour Before)</label>
-                <div class="confirmation-grid">
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="h1_confirm"
-                    onclick="setConfirmation('h1', 'Confirm')"
+              <div id="n1h_section_wrapper" style="margin-top: 20px">
+                <div class="field">
+                  <label>N-1H Confirmation (1 Hour Before)</label>
+                  <div class="confirmation-grid">
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="h1_confirm"
+                      onclick="setConfirmation('h1', 'Confirm')"
+                    >
+                      <span class="dot"></span>Confirm
+                    </button>
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="h1_no_response"
+                      onclick="setConfirmation('h1', 'No Response')"
+                    >
+                      <span class="dot"></span>No Response
+                    </button>
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="h1_reschedule"
+                      onclick="setConfirmation('h1', 'Rescheduled')"
+                    >
+                      <span class="dot"></span>Reschedule
+                    </button>
+                    <button
+                      type="button"
+                      class="pillbtn"
+                      id="h1_canceled"
+                      onclick="setConfirmation('h1', 'Canceled')"
+                    >
+                      <span class="dot"></span>Canceled
+                    </button>
+                  </div>
+                  <div
+                    id="h1_reason_container"
+                    style="display: none; margin-top: 8px"
                   >
-                    <span class="dot"></span>Confirm
-                  </button>
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="h1_no_response"
-                    onclick="setConfirmation('h1', 'No Response')"
+                    <input
+                      type="text"
+                      id="f_h1_reason"
+                      placeholder="Type reason (Required for Reschedule/Canceled)*"
+                    />
+                  </div>
+                  <div
+                    id="h1_reschedule_container"
+                    style="display: none; margin-top: 8px"
                   >
-                    <span class="dot"></span>No Response
-                  </button>
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="h1_reschedule"
-                    onclick="setConfirmation('h1', 'Rescheduled')"
-                  >
-                    <span class="dot"></span>Reschedule
-                  </button>
-                  <button
-                    type="button"
-                    class="pillbtn"
-                    id="h1_canceled"
-                    onclick="setConfirmation('h1', 'Canceled')"
-                  >
-                    <span class="dot"></span>Canceled
-                  </button>
-                </div>
-                <div
-                  id="h1_reason_container"
-                  style="display: none; margin-top: 8px"
-                >
-                  <input
-                    type="text"
-                    id="f_h1_reason"
-                    placeholder="Type reason (Required for Reschedule/Canceled)*"
-                  />
-                </div>
-                <div
-                  id="h1_reschedule_container"
-                  style="display: none; margin-top: 8px"
-                >
-                  <div class="row2">
-                    <div class="field">
-                      <label>New Date</label>
-                      <input type="date" id="f_h1_reschedule_date" />
-                    </div>
-                    <div class="field">
-                      <label>New Time (Arrival)</label>
-                      <input type="time" id="f_h1_reschedule_time" step="900" />
+                    <div class="row2">
+                      <div class="field">
+                        <label>New Date</label
+                        ><input type="date" id="f_h1_reschedule_date" />
+                      </div>
+                      <div class="field">
+                        <label>New Time (Arrival)</label
+                        ><input
+                          type="time"
+                          id="f_h1_reschedule_time"
+                          step="900"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1222,6 +1225,7 @@
             ALL_MODELS.find((m) => variantStr.includes(m.toUpperCase())) || "";
         }
         document.getElementById("f_model").value = matched;
+        document.getElementById("f_model").disabled = false;
         resultsDiv.style.display = "none";
       }
 
@@ -1242,15 +1246,13 @@
             '<option value="">— Select Category First —</option>';
           return;
         }
-
         reqSelect.innerHTML = '<option value="">— Select Request —</option>';
-        let requests = [];
-        if (cat === "GJ") {
-          requests = STATE.gjCommonJobs || [];
-        } else if (STATE && STATE.serviceMapping && STATE.serviceMapping[cat]) {
-          requests = STATE.serviceMapping[cat];
-        }
-
+        let requests =
+          cat === "GJ"
+            ? STATE.gjCommonJobs || []
+            : STATE && STATE.serviceMapping && STATE.serviceMapping[cat]
+              ? STATE.serviceMapping[cat]
+              : [];
         if (requests.length === 0) {
           reqSelect.innerHTML =
             '<option value="">— No requests found —</option>';
@@ -1265,15 +1267,15 @@
       }
 
       function fetchAndApplyRepairTime() {
-        const category = document.getElementById("f_category").value;
-        const model = document.getElementById("f_model").value;
-        const kmSeries = document.getElementById("f_type").value;
+        const category = document.getElementById("f_category").value,
+          model = document.getElementById("f_model").value,
+          kmSeries = document.getElementById("f_type").value;
         if ((category === "EM" || category === "PMS") && model && kmSeries) {
           google.script.run
             .withSuccessHandler((minutes) => {
               currentDuration = parseInt(minutes, 10);
-              const h = Math.floor(currentDuration / 60);
-              const m = currentDuration % 60;
+              const h = Math.floor(currentDuration / 60),
+                m = currentDuration % 60;
               document.getElementById("f_durPreview").textContent =
                 h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
               updateEndTimeFromStart();
@@ -1301,16 +1303,14 @@
 
       function fromMin(mins) {
         const h = Math.floor(mins / 60)
-          .toString()
-          .padStart(2, "0");
-        const m = (mins % 60).toString().padStart(2, "0");
+            .toString()
+            .padStart(2, "0"),
+          m = (mins % 60).toString().padStart(2, "0");
         return `${h}:${m}`;
       }
-
       function currentDate() {
         return document.getElementById("f_date").value;
       }
-
       function shiftDate(delta) {
         const d = new Date(currentDate());
         d.setDate(d.getDate() + delta);
@@ -1321,17 +1321,15 @@
         updateDateChip();
         refresh();
       }
-
       function goToday() {
         document.getElementById("f_date").value = today;
         updateDateChip();
         refresh();
       }
-
       function updateDateChip() {
-        const d = currentDate();
-        const chip = document.getElementById("dateChip");
-        const diff = Math.round((new Date(d) - new Date(today)) / 86400000);
+        const d = currentDate(),
+          chip = document.getElementById("dateChip"),
+          diff = Math.round((new Date(d) - new Date(today)) / 86400000);
         chip.className =
           "datechip " + (diff < 0 ? "past" : diff > 0 ? "future" : "");
         const label = new Date(d).toLocaleDateString("en-PH", {
@@ -1348,7 +1346,6 @@
                 ? "Yesterday · " + label
                 : label;
       }
-
       function setView(v) {
         view = v;
         const s = document.getElementById("split");
@@ -1363,13 +1360,11 @@
           document.getElementById("v_" + x).classList.toggle("active", x === v),
         );
       }
-
       function toMin(t) {
         if (!t) return 0;
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
       }
-
       function statusLabel(s) {
         return (
           {
@@ -1381,10 +1376,9 @@
         );
       }
 
-      // SAFE OPEN MODAL - Prevents JSON parsing errors by reading from the already fetched STATE.
       function openExistingModal(apptId, bay, start) {
-        const d = currentDate();
-        const dayServices = STATE.servicesByDate[d] || [];
+        const d = currentDate(),
+          dayServices = STATE.servicesByDate[d] || [];
         const svc = dayServices.find((x) => x.appointment_id === apptId);
         if (svc) {
           openModal(bay, start, svc);
@@ -1395,8 +1389,9 @@
         if (document.getElementById("modal").classList.contains("show")) return;
         STATE = s;
         if (s.skuModels) {
-          const modelSelect = document.getElementById("f_model");
-          modelSelect.innerHTML =
+          ALL_MODELS = s.skuModels;
+          const ms = document.getElementById("f_model");
+          ms.innerHTML =
             '<option value="">— Select model —</option>' +
             s.skuModels
               .map((m) => `<option value="${m}">${m}</option>`)
@@ -1405,53 +1400,39 @@
         document.getElementById("f_advisor").innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
-        const catSelect = document.getElementById("f_category");
-        catSelect.innerHTML = '<option value="">— Select Category —</option>';
-        (s.serviceCategories || []).forEach((cat) => {
-          const opt = document.createElement("option");
-          opt.value = cat;
-          opt.textContent = cat;
-          catSelect.appendChild(opt);
-        });
+        document.getElementById("f_category").innerHTML =
+          '<option value="">— Select Category —</option>' +
+          (s.serviceCategories || [])
+            .map((cat) => `<option value="${cat}">${cat}</option>`)
+            .join("");
         document.getElementById("f_source").innerHTML =
           '<option value="">— Select Source —</option>' +
           (s.sources || [])
             .map((src) => `<option value="${src}">${src}</option>`)
             .join("");
-
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
-        const d = currentDate();
-        const isToday = d === today;
-        const dayServices = s.servicesByDate[d] || [];
-        const statusFilter = document.getElementById("f_status").value;
-        const visible = dayServices.filter((x) => {
-          if (statusFilter) return x.status === statusFilter;
-          return x.status === "booked" || x.status === "scheduled";
-        });
+        const d = currentDate(),
+          isToday = d === today,
+          dayServices = s.servicesByDate[d] || [],
+          statusFilter = document.getElementById("f_status").value;
+        const visible = dayServices.filter((x) =>
+          statusFilter
+            ? x.status === statusFilter
+            : x.status === "booked" || x.status === "scheduled",
+        );
 
         let tableHtml = "";
         FULL_SCHEDULE_SLOTS.forEach((slotTime) => {
           const svc = visible.find((x) => x.start === slotTime);
           if (svc) {
-            tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')">
-                <td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td>
-                <td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td>
-                <td>${svc.plate}<div class="sub">${svc.model || ""}</div></td>
-                <td>${svc.type}</td>
-                <td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td>
-                <td>${svc.advisor}</td>
-                <td><span class="badge b-${svc.status}">${statusLabel(svc.status)}</span></td>
-              </tr>`;
+            tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${svc.plate}<div class="sub">${svc.model || ""}</div></td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td><span class="badge b-scheduled">Booked</span></td></tr>`;
           } else {
-            tableHtml += `<tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;">
-                <td style="color: #9a9aa0;">${slotTime}</td>
-                <td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot (Click to book)</span></td>
-              </tr>`;
+            tableHtml += `<tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;"><td style="color: #9a9aa0;">${slotTime}</td><td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot</span></td></tr>`;
           }
         });
         document.querySelector("#tbl tbody").innerHTML = tableHtml;
-        document.getElementById("tableCount").textContent = dayServices.length;
+        document.getElementById("tableCount").textContent = visible.length;
 
         const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
         let h =
@@ -1465,24 +1446,16 @@
           h += `<tr><td class="bay">${b.name}</td>`;
           let i = 0;
           while (i < SLOTS.length) {
-            const slot = SLOTS[i];
-            const svc = visible.find(
-              (x) => x.bay === b.id && x.gridStart === slot,
-            );
-            const nowCls =
-              isToday && nowMin >= toMin(slot) && nowMin < toMin(slot) + 30
-                ? " now"
-                : "";
+            const slot = SLOTS[i],
+              svc = visible.find((x) => x.bay === b.id && x.gridStart === slot);
             if (svc) {
-              const span = Math.max(1, Math.round(svc.dur / 30));
-              const name = `${svc.lastName}, ${svc.firstName || ""}`
-                .trim()
-                .replace(/,$/, "");
-              const catColor = getCategoryColor(svc.service_category);
-              h += `<td colspan="${span}" class="${nowCls}"><div class="block s-${svc.status}" style="border-left-color: ${catColor}; background-color: ${catColor}15;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><div class="name" style="color: ${catColor};">${name}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
+              const span = Math.max(1, Math.round(svc.dur / 30)),
+                name = svc.lastName,
+                catColor = getCategoryColor(svc.service_category);
+              h += `<td colspan="${span}"><div class="block s-scheduled" style="border-left-color: ${catColor}; background-color: ${catColor}15;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><div class="name" style="color: ${catColor};">${name}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
               i += span;
             } else {
-              h += `<td class="free${nowCls}" onclick="openModal('${b.id}','${slot}')"></td>`;
+              h += `<td class="free" onclick="openModal('${b.id}','${slot}')"></td>`;
               i++;
             }
           }
@@ -1497,7 +1470,6 @@
       function onError(err) {
         alert(String(err).replace("Error: ", ""));
       }
-
       function openModalWithDefaultsAt(time) {
         const defaultBay = STATE && STATE.bays.length ? STATE.bays[0].id : "";
         openModal(defaultBay, time);
@@ -1510,12 +1482,11 @@
           date: currentDate(),
           appointment_id: existingData ? existingData.appointment_id : null,
         };
-        const modal = document.getElementById("modal");
-        const drawer = modal.querySelector(".drawer");
-        const title = document.getElementById("modalTitle");
-        const bookBtn = document.getElementById("bookBtn");
-        const confSection = document.getElementById("confirmationSection");
-
+        const modal = document.getElementById("modal"),
+          drawer = modal.querySelector(".drawer"),
+          title = document.getElementById("modalTitle"),
+          bookBtn = document.getElementById("bookBtn"),
+          confSection = document.getElementById("confirmationSection");
         const mode = existingData ? "edit" : "create";
         title.textContent =
           mode === "edit" ? "Edit Appointment" : "New Appointment";
@@ -1535,14 +1506,12 @@
           document.getElementById("f_model").innerHTML =
             `<option>${existingData.model}</option>`;
           document.getElementById("f_year").value = existingData.year || "";
-
           document.getElementById("f_category").innerHTML =
             `<option>${existingData.service_category || ""}</option>`;
           document.getElementById("f_type").innerHTML =
             `<option>${existingData.type}</option>`;
           document.getElementById("f_advisor").innerHTML =
             `<option>${existingData.advisor}</option>`;
-
           document.getElementById("f_start").value =
             existingData.gridStart || "";
           document.getElementById("f_remarks").value =
@@ -1554,9 +1523,20 @@
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
 
+          // Visibility Logic
+          const n1dVal = String(existingData.n1d_status || "")
+            .trim()
+            .toUpperCase();
+          const n1hVal = String(existingData.n1h_status || "")
+            .trim()
+            .toUpperCase();
+          document.getElementById("n1d_section_wrapper").style.display =
+            n1dVal === "CONFIRMED" ? "none" : "block";
+          document.getElementById("n1h_section_wrapper").style.display =
+            n1hVal === "CONFIRMED" ? "none" : "block";
+
           currentDuration = existingData.dur || 60;
           adjustDuration(0);
-
           const lockIds = [
             "f_apptTime",
             "f_lastName",
@@ -1582,11 +1562,14 @@
               if (el.tagName === "SELECT") el.disabled = true;
             }
           });
-
           document.getElementById("dur_minus").style.pointerEvents = "none";
           document.getElementById("dur_plus").style.pointerEvents = "none";
         } else {
-          const idsToReset = [
+          document.getElementById("n1d_section_wrapper").style.display =
+            "block";
+          document.getElementById("n1h_section_wrapper").style.display =
+            "block";
+          [
             "f_lastName",
             "f_contact",
             "f_plate",
@@ -1601,8 +1584,7 @@
             "f_advisor",
             "f_start",
             "f_source",
-          ];
-          idsToReset.forEach((id) => {
+          ].forEach((id) => {
             const el = document.getElementById(id);
             if (el.tagName === "SELECT") {
               if (id === "f_category") {
@@ -1620,26 +1602,21 @@
               el.removeAttribute("readonly");
             }
           });
-
           document.getElementById("f_apptTime").value = start;
           document.getElementById("f_apptTime").removeAttribute("readonly");
           currentDuration = 60;
-          document.getElementById("f_durPreview").textContent = "1h";
-          document.getElementById("dur_minus").style.pointerEvents = "auto";
-          document.getElementById("dur_plus").style.pointerEvents = "auto";
-
+          adjustDuration(0);
           syncWorkshopFromAppt();
           resetConfirmations();
           render(STATE);
+          document.getElementById("dur_minus").style.pointerEvents = "auto";
+          document.getElementById("dur_plus").style.pointerEvents = "auto";
         }
-
         modal.classList.add("show");
-
-        if (mode === "edit") {
+        if (mode === "edit")
           setTimeout(() => {
             drawer.scrollTo({ top: drawer.scrollHeight, behavior: "smooth" });
           }, 300);
-        }
       }
 
       function setConfirmation(type, value) {
@@ -1647,52 +1624,35 @@
         buttons.forEach((btn) =>
           document.getElementById(`${type}_${btn}`).classList.remove("on"),
         );
-
         let cleanId = value.toLowerCase().replace(" ", "_");
         if (cleanId === "rescheduled") cleanId = "reschedule";
         const targetBtn = document.getElementById(`${type}_${cleanId}`);
         if (targetBtn) targetBtn.classList.add("on");
-
-        const reasonContainer = document.getElementById(
-          `${type}_reason_container`,
-        );
-        const rescheduleContainer = document.getElementById(
-          `${type}_reschedule_container`,
-        );
-
+        const rCont = document.getElementById(`${type}_reason_container`),
+          rsCont = document.getElementById(`${type}_reschedule_container`);
         if (value === "Rescheduled") {
-          reasonContainer.style.display = "block";
-          rescheduleContainer.style.display = "block";
+          rCont.style.display = "block";
+          rsCont.style.display = "block";
         } else if (value === "Canceled") {
-          reasonContainer.style.display = "block";
-          rescheduleContainer.style.display = "none";
-          document.getElementById(`f_${type}_reschedule_date`).value = "";
-          document.getElementById(`f_${type}_reschedule_time`).value = "";
+          rCont.style.display = "block";
+          rsCont.style.display = "none";
         } else {
-          reasonContainer.style.display = "none";
-          rescheduleContainer.style.display = "none";
-          document.getElementById(`f_${type}_reason`).value = "";
-          document.getElementById(`f_${type}_reschedule_date`).value = "";
-          document.getElementById(`f_${type}_reschedule_time`).value = "";
+          rCont.style.display = "none";
+          rsCont.style.display = "none";
         }
-
         if (type === "n1") selectedConfN1 = value;
         if (type === "h1") selectedConfH1 = value;
       }
 
       function resetConfirmations() {
-        const buttons = ["confirm", "no_response", "reschedule", "canceled"];
         ["n1", "h1"].forEach((t) => {
-          buttons.forEach((b) =>
+          ["confirm", "no_response", "reschedule", "canceled"].forEach((b) =>
             document.getElementById(`${t}_${b}`).classList.remove("on"),
           );
           document.getElementById(`${t}_reason_container`).style.display =
             "none";
           document.getElementById(`${t}_reschedule_container`).style.display =
             "none";
-          document.getElementById(`f_${t}_reason`).value = "";
-          document.getElementById(`f_${t}_reschedule_date`).value = "";
-          document.getElementById(`f_${t}_reschedule_time`).value = "";
         });
         selectedConfN1 = "";
         selectedConfH1 = "";
@@ -1706,44 +1666,36 @@
       }
 
       function save() {
-        const btn = document.getElementById("bookBtn");
         const mode = document
           .getElementById("modalTitle")
           .textContent.includes("Edit")
           ? "edit"
           : "create";
-
-        const currentStatus = selectedConfH1 || selectedConfN1;
-        const currentReason = val("f_h1_reason") || val("f_n1_reason");
-
+        const currentStatus = selectedConfH1 || selectedConfN1,
+          currentReason = val("f_h1_reason") || val("f_n1_reason");
         if (
           (currentStatus === "Rescheduled" || currentStatus === "Canceled") &&
           !currentReason
         ) {
-          alert("Please enter a reason for Rescheduling or Cancellation.");
+          alert("Please enter a reason.");
           return;
         }
-
-        let newDate = "",
-          newTime = "";
+        let nDate = "",
+          nTime = "";
         if (currentStatus === "Rescheduled") {
-          newDate =
+          nDate =
             selectedConfH1 === "Rescheduled"
               ? val("f_h1_reschedule_date")
               : val("f_n1_reschedule_date");
-          newTime =
+          nTime =
             selectedConfH1 === "Rescheduled"
               ? val("f_h1_reschedule_time")
               : val("f_n1_reschedule_time");
-
-          if (!newDate || !newTime) {
-            alert(
-              "Please provide the New Date and Time for the rescheduled appointment.",
-            );
+          if (!nDate || !nTime) {
+            alert("Please provide New Date and Time.");
             return;
           }
         }
-
         if (
           mode === "create" &&
           (!val("f_start") ||
@@ -1755,10 +1707,9 @@
           alert("Please fill mandatory fields.");
           return;
         }
-
+        const btn = document.getElementById("bookBtn");
         btn.disabled = true;
         btn.textContent = "Processing...";
-
         const p = {
           appointment_id: picked.appointment_id,
           date: picked.date,
@@ -1782,29 +1733,24 @@
           remarks: val("f_remarks"),
           status: currentStatus || "booked",
           status_remarks: currentReason || "",
-          newDate: newDate,
-          newTime: newTime,
+          newDate: nDate,
+          newTime: nTime,
           category: val("f_category"),
-          n1_conf: selectedConfN1, // Added line
-          h1_conf: selectedConfH1, // Added line
+          n1_conf: selectedConfN1,
+          h1_conf: selectedConfH1,
         };
-
         const serverFunc =
           mode === "edit" ? "updateAppointmentStatus" : "bookService";
-
         google.script.run
           .withSuccessHandler((s) => {
             render(s);
             closeModal();
             btn.disabled = false;
-            btn.textContent =
-              mode === "edit" ? "Update Status" : "Book Appointment";
+            btn.textContent = "Success!";
             showToast("Success!");
           })
           .withFailureHandler((err) => {
             btn.disabled = false;
-            btn.textContent =
-              mode === "edit" ? "Update Status" : "Book Appointment";
             onError(err);
           })
           [serverFunc](p);

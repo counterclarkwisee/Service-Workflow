@@ -72,6 +72,8 @@ const AppointmentService = (function () {
         assigneeLast: appt.assignee_last_name || "",
         assigneeFirst: appt.assignee_first_name || "",
         assigneeContact: appt.assignee_contact || "",
+        n1d_status: appt.n1d_confirmation || "",
+        n1h_status: appt.n1h_confirmation || "",
       });
     });
 
@@ -317,6 +319,18 @@ const AppointmentService = (function () {
       .toString()
       .padStart(4, "0");
     return prefix + "-" + ts + "-" + rand;
+  }
+
+  function debugAppointments() {
+    const rows = AppointmentRepo.listAll();
+    if (rows.length > 0) {
+      Logger.log("Available Keys in your database:");
+      Logger.log(Object.keys(rows[0]));
+      Logger.log("Data for the first row:");
+      Logger.log(rows[0]);
+    } else {
+      Logger.log("No appointments found.");
+    }
   }
 
   function _getAdvisors() {
