@@ -281,21 +281,18 @@
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       }
 
-      /* Blue: Used for Booked and Confirmed items */
       .b-navy-pill {
         background: #e7f5ff;
         border-color: #74c0fc;
         color: #1971c2;
       }
 
-      /* Slate: Used for No Response */
       .b-no-response-pill {
         background: #f1f3f5;
         border-color: #ced4da;
         color: #495057;
       }
 
-      /* Preserved standard classes */
       .b-booked-pill {
         background: #e7f5ff;
         border-color: #74c0fc;
@@ -1588,15 +1585,17 @@
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
 
-          // Visibility Logic
+          // Visibility Logic (STRICT: Only hide if status is exactly CONFIRMED)
           const n1dVal = String(existingData.n1d_status || "")
             .trim()
             .toUpperCase();
           const n1hVal = String(existingData.n1h_status || "")
             .trim()
             .toUpperCase();
+
           document.getElementById("n1d_section_wrapper").style.display =
             n1dVal === "CONFIRMED" ? "none" : "block";
+
           document.getElementById("n1h_section_wrapper").style.display =
             n1hVal === "CONFIRMED" ? "none" : "block";
 

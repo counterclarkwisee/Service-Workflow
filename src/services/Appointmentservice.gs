@@ -58,7 +58,7 @@ const AppointmentService = (function () {
         dur: Number(s.current_duration_minutes) || 60,
         bay: s.current_bay_id,
         type: s.service_type,
-        service_category: appt.service_category || "", // Added to reflect in UI
+        service_category: appt.service_category || "",
         status: appt.status || s.status || "scheduled",
         lastName: appt.last_name,
         firstName: appt.first_name,
@@ -142,12 +142,7 @@ const AppointmentService = (function () {
       );
       if (conflict) {
         throw new Error(
-          "Cannot reschedule: " +
-            conflict +
-            " is already booked at " +
-            p.newTime +
-            " on " +
-            p.newDate,
+          "Cannot reschedule: " + conflict + " is already booked.",
         );
       }
     }
@@ -163,28 +158,27 @@ const AppointmentService = (function () {
 
     if (rowIndex === -1) throw new Error("Appointment ID not found.");
 
-    // 3. Update Status and Remarks (Cols O & P)
-    apptSheet.getRange(rowIndex, 15).setValue(p.status);
-    apptSheet.getRange(rowIndex, 16).setValue(p.status_remarks);
+    // 3. Update Category (O), Status (P), and Remarks (T)
+    apptSheet.getRange(rowIndex, 15).setValue(p.category); // Column O
+    apptSheet.getRange(rowIndex, 16).setValue(p.status); // Column P
+    apptSheet.getRange(rowIndex, 20).setValue(p.status_remarks); // Column T
 
-    // 4. Update Confirmations (Cols Q & R)
-    // N-1D Confirmation (Column Q)
+    // 4. Update Confirmations (Cols R & S)
     if (p.n1_conf === "Confirm") {
-      apptSheet.getRange(rowIndex, 17).setValue("CONFIRMED");
-    } else if (p.n1_conf) {
-      apptSheet.getRange(rowIndex, 17).setValue(p.n1_conf.toUpperCase());
-    }
-
-    // N-1H Confirmation (Column R)
-    if (p.h1_conf === "Confirm") {
       apptSheet.getRange(rowIndex, 18).setValue("CONFIRMED");
-    } else if (p.h1_conf) {
-      apptSheet.getRange(rowIndex, 18).setValue(p.h1_conf.toUpperCase());
+    } else if (p.n1_conf) {
+      apptSheet.getRange(rowIndex, 18).setValue(p.n1_conf.toUpperCase());
     }
 
-    // 5. Update Audit Trail (Cols V & W)
-    apptSheet.getRange(rowIndex, 22).setValue(new Date());
-    apptSheet.getRange(rowIndex, 23).setValue(userEmail);
+    if (p.h1_conf === "Confirm") {
+      apptSheet.getRange(rowIndex, 19).setValue("CONFIRMED");
+    } else if (p.h1_conf) {
+      apptSheet.getRange(rowIndex, 19).setValue(p.h1_conf.toUpperCase());
+    }
+
+    // 5. Update Audit Trail (assuming Column W/X)
+    apptSheet.getRange(rowIndex, 23).setValue(new Date());
+    apptSheet.getRange(rowIndex, 24).setValue(userEmail);
 
     // 6. Handle Service Grid Cleanup
     if (p.status === "Canceled" || p.status === "Rescheduled") {
@@ -198,7 +192,7 @@ const AppointmentService = (function () {
       }
     }
 
-    // 7. Handle New Row Creation for Rescheduled
+    // 7. Handle New Row Creation for Rescheduled with Traceability ID
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const newP = {
@@ -206,6 +200,7 @@ const AppointmentService = (function () {
         date: p.newDate,
         start: newWorkshopStart,
         apptArrival: p.newTime,
+        rescheduled_id: p.appointment_id, // Pass current ID as the Trace ID for the new row
       };
       bookAppointment(newP, { email: userEmail });
     }
@@ -248,7 +243,7 @@ const AppointmentService = (function () {
     const now = new Date();
     const apptId = _generateId("APT");
     const serviceId = _generateId("SVC");
-    const arrivalTime = _subtractMinutes(p.start, 30);
+    const arrivalTime = p.apptArrival || _subtractMinutes(p.start, 30);
 
     const appointment = {
       appointment_id: apptId,
@@ -264,10 +259,11 @@ const AppointmentService = (function () {
       appointment_date: p.date,
       scheduled_arrival_time: arrivalTime,
       assigned_advisor_name: p.advisor || "",
-      service_category: p.category || "", // Now mapped and stored
+      service_category: p.category || "", // Column O
+      status: "booked", // Column P
+      rescheduled_id: p.rescheduled_id || "", // Column Q
       source: p.source || "",
-      status: "booked",
-      status_remarks: "",
+      status_remarks: "", // Column T
       assignee_last_name: p.assigneeLast || "",
       assignee_first_name: p.assigneeFirst || "",
       assignee_contact: p.assigneeContact || "",
@@ -319,18 +315,6 @@ const AppointmentService = (function () {
       .toString()
       .padStart(4, "0");
     return prefix + "-" + ts + "-" + rand;
-  }
-
-  function debugAppointments() {
-    const rows = AppointmentRepo.listAll();
-    if (rows.length > 0) {
-      Logger.log("Available Keys in your database:");
-      Logger.log(Object.keys(rows[0]));
-      Logger.log("Data for the first row:");
-      Logger.log(rows[0]);
-    } else {
-      Logger.log("No appointments found.");
-    }
   }
 
   function _getAdvisors() {
