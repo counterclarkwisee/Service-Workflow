@@ -64,14 +64,19 @@ const AppointmentService = (function () {
         dur: Number(s.current_duration_minutes) || 60,
         bay: s.current_bay_id,
         type: s.service_type,
-        status: s.status || "scheduled",
+        status: appt.status || s.status || "scheduled", // Map from appointments sheet Column O
         lastName: appt.last_name,
         firstName: appt.first_name,
         contact: appt.client_phone,
         plate: appt.plate_number,
+        csNo: appt.cs_no,
         model: appt.vehicle_model,
         year: appt.vehicle_year,
         advisor: appt.assigned_advisor_name || "",
+        remarks: appt.remarks || "",
+        assigneeLast: appt.assignee_last_name || "",
+        assigneeFirst: appt.assignee_first_name || "",
+        assigneeContact: appt.assignee_contact || "",
       });
     });
 
@@ -102,17 +107,12 @@ const AppointmentService = (function () {
     const allRequests = PMSServiceRequestRepo.listAll();
     const branch = BRANCH_CODE.toUpperCase();
 
-    console.log(
-      `[BACKEND] Fetched ${allRequests.length} rows from PMSServiceRequestRepo. Branch: "${branch}"`,
-    );
-
-    // Helper function to crush strings down to their core (e.g. "40,000 KM CHECK UP" -> "40000KM")
     const normalize = (str) => {
       return String(str || "")
         .toUpperCase()
-        .replace(/CHECK\s*UP/g, "") // Removes "CHECK UP" or "CHECKUP"
-        .replace(/,/g, "") // Removes commas
-        .replace(/\s+/g, ""); // Removes ALL spaces
+        .replace(/CHECK\s*UP/g, "")
+        .replace(/,/g, "")
+        .replace(/\s+/g, "");
     };
 
     const targetKm = normalize(kmSeries);
@@ -120,48 +120,108 @@ const AppointmentService = (function () {
       .toUpperCase()
       .trim();
 
-    console.log(
-      `[BACKEND] Normalized Search Params -> Target KM: "${targetKm}", Target Model: "${targetModel}"`,
-    );
-
     const match = allRequests.find((r) => {
-      const rowKm = normalize(r.km_series); // Normalize the DB row exactly the same way
+      const rowKm = normalize(r.km_series);
       const rowModelStr = String(r.model || "").toUpperCase();
       const rowBranch = String(r.branch || "").toUpperCase();
-
-      // Handle comma-separated models: "FORTUNER, HILUX, INNOVA"
       const modelsArray = rowModelStr.split(",").map((m) => m.trim());
 
-      const isMatch =
+      return (
         rowKm === targetKm &&
         modelsArray.includes(targetModel) &&
-        rowBranch.indexOf(branch) !== -1;
-
-      if (isMatch) {
-        console.log(
-          `[BACKEND] MATCH FOUND in DB! DB Row -> KM: "${r.km_series}", Model: "${r.model}", Branch: "${r.branch}", Time: "${r.repair_time}"`,
-        );
-      }
-
-      return isMatch;
+        rowBranch.indexOf(branch) !== -1
+      );
     });
 
     if (match) {
-      // Extract only numbers from the DB just in case it says "30 mins" instead of "30"
       const timeDigits = String(match.repair_time).replace(/[^0-9]/g, "");
-      console.log(`[BACKEND] Returning extracted time: ${timeDigits} minutes.`);
       return timeDigits ? Number(timeDigits) : 60;
     }
+    return 60;
+  }
 
-    console.log(`[BACKEND] NO MATCH FOUND. Returning fallback 60 minutes.`);
-    return 60; // Fallback
+  /**
+   * NEW: Updates Appointment Status, Remarks, and creates new rows if Rescheduled
+   */
+  function updateAppointmentStatus(p, user) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const apptSheet = ss.getSheetByName("appointments");
+    const apptData = apptSheet.getDataRange().getValues();
+    const userEmail =
+      user && user.email ? user.email : Session.getActiveUser().getEmail();
+
+    // 1. Conflict Check Before Doing Anything
+    if (p.status === "Rescheduled" && p.newDate && p.newTime) {
+      const newWorkshopStart = _addMinutes(p.newTime, 30);
+      const conflict = _getConflictingBayName(
+        p.bay,
+        p.newDate,
+        newWorkshopStart,
+      );
+      if (conflict) {
+        throw new Error(
+          "Cannot reschedule: " +
+            conflict +
+            " is already booked at " +
+            p.newTime +
+            " on " +
+            p.newDate +
+            ". Please clear the bay first.",
+        );
+      }
+    }
+
+    // 2. Find row index of the existing appointment
+    let rowIndex = -1;
+    for (let i = 1; i < apptData.length; i++) {
+      if (apptData[i][0] === p.appointment_id) {
+        rowIndex = i + 1; // +1 for 1-based index
+        break;
+      }
+    }
+
+    if (rowIndex === -1) throw new Error("Appointment ID not found.");
+
+    // 3. Update old row (Column O = index 14, Column P = index 15)
+    apptSheet.getRange(rowIndex, 15).setValue(p.status);
+    apptSheet.getRange(rowIndex, 16).setValue(p.status_remarks);
+    apptSheet.getRange(rowIndex, 22).setValue(new Date());
+    apptSheet.getRange(rowIndex, 23).setValue(userEmail);
+
+    // 4. Free up grid by updating the specific service row status
+    if (p.status === "Canceled" || p.status === "Rescheduled") {
+      const svcSheet = ss.getSheetByName("services");
+      const svcData = svcSheet.getDataRange().getValues();
+      for (let i = 1; i < svcData.length; i++) {
+        if (svcData[i][1] === p.appointment_id) {
+          // Update service status (assuming column L / 12th column is Status)
+          svcSheet.getRange(i + 1, 12).setValue(p.status.toLowerCase());
+          break;
+        }
+      }
+    }
+
+    // 5. Automatically book the new appointment using the new date and time
+    if (p.status === "Rescheduled" && p.newDate && p.newTime) {
+      const newWorkshopStart = _addMinutes(p.newTime, 30);
+
+      const newP = {
+        ...p,
+        date: p.newDate,
+        start: newWorkshopStart,
+        apptArrival: p.newTime,
+      };
+
+      bookAppointment(newP, { email: userEmail });
+    }
+
+    return getState();
   }
 
   function _getConflictingBayName(bayId, date, startTime) {
     const allServices = ServiceRepo.listAll();
     const allAppts = AppointmentRepo.listAll();
     const allBays = BayRepo.listActive();
-
     const apptDates = {};
     allAppts.forEach((a) => (apptDates[a.appointment_id] = a.appointment_date));
 
@@ -171,7 +231,9 @@ const AppointmentService = (function () {
         s.current_bay_id === bayId &&
         sDate === date &&
         s.current_start_time === startTime &&
-        s.status !== "cancelled"
+        s.status !== "cancelled" &&
+        s.status !== "canceled" &&
+        s.status !== "rescheduled" // Ensure we don't conflict with freed slots
       );
     });
 
@@ -184,18 +246,13 @@ const AppointmentService = (function () {
 
   function bookAppointment(p, user) {
     const conflictingBayName = _getConflictingBayName(p.bay, p.date, p.start);
-
     if (conflictingBayName) {
-      throw new Error(
-        conflictingBayName +
-          " is already booked for that time. Please pick another time.",
-      );
+      throw new Error(conflictingBayName + " is already booked for that time.");
     }
 
     const now = new Date();
     const apptId = _generateId("APT");
     const serviceId = _generateId("SVC");
-
     const arrivalTime = _subtractMinutes(p.start, 30);
 
     const appointment = {
@@ -214,10 +271,7 @@ const AppointmentService = (function () {
       assigned_advisor_name: p.advisor || "",
       source: p.source || "",
       status: "booked",
-      assignee_last_name: p.assigneeLast || "",
-      assignee_first_name: p.assigneeFirst || "",
-      assignee_contact: p.assigneeContact || "",
-      remarks: p.remarks || "",
+      status_remarks: "",
       last_modified_at: now,
       last_modified_by: user.email,
     };
@@ -248,7 +302,14 @@ const AppointmentService = (function () {
     let date = new Date();
     date.setHours(h, m, 0, 0);
     date.setMinutes(date.getMinutes() - minsToSubtract);
+    return Utilities.formatDate(date, "Asia/Manila", "HH:mm");
+  }
 
+  function _addMinutes(timeStr, minsToAdd) {
+    const [h, m] = timeStr.split(":").map(Number);
+    let date = new Date();
+    date.setHours(h, m, 0, 0);
+    date.setMinutes(date.getMinutes() + minsToAdd);
     return Utilities.formatDate(date, "Asia/Manila", "HH:mm");
   }
 
@@ -278,5 +339,6 @@ const AppointmentService = (function () {
     getState: getState,
     bookAppointment: bookAppointment,
     getRequiredRepairTime: getRequiredRepairTime,
+    updateAppointmentStatus: updateAppointmentStatus, // Exposed to global
   };
 })();

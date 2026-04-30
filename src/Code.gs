@@ -1,56 +1,40 @@
 /**
  * Code.gs — entry point
- * * Responsibilities:
+ * Responsibilities:
  * - Serve the HTML shell via doGet
  * - Handle state orchestration for the UI
  */
 
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile("views/Index")
+  // Ensure the path matches your file structure (views/Appointmentview)
+  return HtmlService.createHtmlOutputFromFile("views/Appointmentview")
     .setTitle("Toyota Service Workflow")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 /**
  * Main state fetcher for the UI.
- * This combines your appointments, bays, and the service mapping.
- * It also now includes the Sku models so they are available immediately.
+ * Now routes through AppointmentService to ensure logic consistency.
  */
 function getState() {
-  // Fetch relational mapping from DataFieldsRepo (Column H & I logic)
-  const mapping = DataFieldsRepo.getMapping();
-
-  // Fetch core models for the extraction matching logic
-  const skuModels = getSkuModels();
-
-  return {
-    bays: BayRepo.listAll(),
-    servicesByDate: AppointmentRepo.getServicesByDate(),
-    advisors: AdvisorRepo.listAll(),
-    serviceCategories: mapping.categories, // Used for Category dropdown
-    serviceMapping: mapping.requests, // Relational data for Service Request
-    skuModels: skuModels, // Used to match "Fortuner" from variant string
-  };
+  try {
+    return AppointmentService.getState();
+  } catch (e) {
+    console.error("Error in getState: " + e.message);
+    throw new Error("Failed to fetch application state.");
+  }
 }
 
 /**
- * Fetches the list of core models from 'sku' sheet Column A
+ * BRIDGE FUNCTION: updateAppointmentStatus
+ * Handles Rescheduling (creating new rows) and Canceling.
  */
-function getSkuModels() {
+function updateAppointmentStatus(payload) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName("sku");
-    if (!sheet) return [];
-
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return [];
-
-    const values = sheet.getRange("A2:A" + lastRow).getValues();
-    // Flatten and clean up empty rows
-    return values.flat().filter((item) => item && String(item).trim() !== "");
+    const user = { email: Session.getActiveUser().getEmail() };
+    return AppointmentService.updateAppointmentStatus(payload, user);
   } catch (e) {
-    console.error("Error in getSkuModels: " + e.message);
-    return [];
+    throw new Error("Update Failed: " + e.message);
   }
 }
 
@@ -66,15 +50,25 @@ function getCustomerData() {
 }
 
 /**
- * Handles the booking of the service
+ * Handles the booking of a brand new service
  */
 function bookService(payload) {
   try {
-    AppointmentRepo.save(payload);
-    return getState(); // Return updated state to refresh the table and grid
+    const user = { email: Session.getActiveUser().getEmail() };
+    // Pass the work to the service layer
+    AppointmentService.bookAppointment(payload, user);
+    // Refresh the UI state
+    return AppointmentService.getState();
   } catch (e) {
     throw new Error("Failed to book service: " + e.message);
   }
+}
+
+/**
+ * BRIDGE FUNCTION: Repair Time Lookup
+ */
+function getRequiredRepairTime(model, kmSeries) {
+  return AppointmentService.getRequiredRepairTime(model, kmSeries);
 }
 
 /**
@@ -82,8 +76,4 @@ function bookService(payload) {
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
-function getRequiredRepairTime(model, kmSeries) {
-  return AppointmentService.getRequiredRepairTime(model, kmSeries);
 }
