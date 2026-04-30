@@ -281,27 +281,41 @@
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       }
 
-      /* BOOKED: Calm Deep Slate */
-      .b-booked-pill {
-        background: #f1f3f5;
-        border-color: #ced4da;
-        color: #495057;
-      }
-
-      /* N-1D: Trustworthy Navy Blue */
-      .b-n1d-pill {
+      /* Blue: Used for Booked and Confirmed items */
+      .b-navy-pill {
         background: #e7f5ff;
         border-color: #74c0fc;
         color: #1971c2;
       }
 
-      /* N-1H: Priority Crimson Red */
-      .b-n1h-pill {
-        background: #fff5f5;
-        border-color: #ffa8a8;
-        color: #e03131;
+      /* Slate: Used for No Response */
+      .b-no-response-pill {
+        background: #f1f3f5;
+        border-color: #ced4da;
+        color: #495057;
       }
 
+      /* Preserved standard classes */
+      .b-booked-pill {
+        background: #e7f5ff;
+        border-color: #74c0fc;
+        color: #1971c2;
+      }
+      .b-scheduled {
+        background: #ececef;
+        border-color: #6b6b70;
+        color: #3c3c3c;
+      }
+      .b-in_service {
+        background: #fff4e0;
+        border-color: #f59e0b;
+        color: #92400e;
+      }
+      .b-awaiting_parts {
+        background: #fdecee;
+        border-color: #eb0a1e;
+        color: #a30714;
+      }
       .b-done {
         background: #e6f4ea;
         border-color: #1e8e3e;
@@ -1451,22 +1465,30 @@
           const svc = visible.find((x) => x.start === slotTime);
           if (svc) {
             let statusHtml = '<div class="status-cell">';
-            statusHtml += `<span class="badge b-booked-pill">Booked</span>`;
 
-            if (
-              String(svc.n1d_status || "")
-                .trim()
-                .toUpperCase() === "CONFIRMED"
-            ) {
-              statusHtml += `<span class="badge b-n1d-pill">N-1D</span>`;
+            // 1. BOOKED (Blue)
+            statusHtml += `<span class="badge b-navy-pill">Booked</span>`;
+
+            // 2. N-1D Logic
+            const n1d = String(svc.n1d_status || "")
+              .trim()
+              .toUpperCase();
+            if (n1d === "CONFIRMED") {
+              statusHtml += `<span class="badge b-navy-pill">N-1D: CONFIRMED</span>`;
+            } else if (n1d === "NO RESPONSE") {
+              statusHtml += `<span class="badge b-no-response-pill">N-1D: NR</span>`;
             }
-            if (
-              String(svc.n1h_status || "")
-                .trim()
-                .toUpperCase() === "CONFIRMED"
-            ) {
-              statusHtml += `<span class="badge b-n1h-pill">N-1H</span>`;
+
+            // 3. N-1H Logic
+            const n1h = String(svc.n1h_status || "")
+              .trim()
+              .toUpperCase();
+            if (n1h === "CONFIRMED") {
+              statusHtml += `<span class="badge b-navy-pill">N-1H: CONFIRMED</span>`;
+            } else if (n1h === "NO RESPONSE") {
+              statusHtml += `<span class="badge b-no-response-pill">N-1H: NR</span>`;
             }
+
             statusHtml += "</div>";
 
             tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${svc.plate}<div class="sub">${svc.model || ""}</div></td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
