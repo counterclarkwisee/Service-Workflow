@@ -246,6 +246,7 @@
         font-size: 11px;
         margin-top: 2px;
       }
+
       .occupied-row td {
         padding: 12px 14px !important;
         font-weight: 500;
@@ -260,36 +261,53 @@
         border-bottom: 1px dashed #ececef !important;
         padding: 8px 14px !important;
       }
+
+      .status-cell {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+
       .badge {
         display: inline-block;
-        padding: 3px 9px;
-        border-radius: 10px;
+        padding: 4px 10px;
+        border-radius: 6px;
         font-size: 10px;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.4px;
-        border-left: 3px solid;
+        letter-spacing: 0.5px;
+        border: 1px solid;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
       }
-      .b-scheduled {
-        background: #ececef;
-        border-color: #6b6b70;
-        color: #3c3c3c;
+
+      /* BOOKED: Calm Deep Slate */
+      .b-booked-pill {
+        background: #f1f3f5;
+        border-color: #ced4da;
+        color: #495057;
       }
-      .b-in_service {
-        background: #fff4e0;
-        border-color: #f59e0b;
-        color: #92400e;
+
+      /* N-1D: Trustworthy Navy Blue */
+      .b-n1d-pill {
+        background: #e7f5ff;
+        border-color: #74c0fc;
+        color: #1971c2;
       }
-      .b-awaiting_parts {
-        background: #fdecee;
-        border-color: #eb0a1e;
-        color: #a30714;
+
+      /* N-1H: Priority Crimson Red */
+      .b-n1h-pill {
+        background: #fff5f5;
+        border-color: #ffa8a8;
+        color: #e03131;
       }
+
       .b-done {
         background: #e6f4ea;
         border-color: #1e8e3e;
         color: #0f5c26;
       }
+
       .grid-wrap {
         overflow: auto;
         height: 100%;
@@ -408,6 +426,7 @@
         background: #e6f4ea;
         border-color: #1e8e3e;
       }
+
       .modal {
         position: fixed;
         inset: 0;
@@ -532,6 +551,7 @@
         cursor: not-allowed;
         border-style: dashed;
       }
+
       .duration-stepper {
         display: flex;
         align-items: center;
@@ -566,6 +586,7 @@
         cursor: not-allowed;
         border-style: dashed;
       }
+
       .timerange {
         display: flex;
         align-items: center;
@@ -598,6 +619,7 @@
         min-width: 54px;
         text-align: center;
       }
+
       .confirmation-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -635,6 +657,7 @@
         background: #eb0a1e;
         box-shadow: inset 0 0 0 3px #fff;
       }
+
       .optional {
         font-size: 10px;
         font-weight: 500;
@@ -671,6 +694,7 @@
       .toast-error {
         background: #eb0a1e;
       }
+
       .ac-container {
         position: relative;
       }
@@ -1426,7 +1450,26 @@
         FULL_SCHEDULE_SLOTS.forEach((slotTime) => {
           const svc = visible.find((x) => x.start === slotTime);
           if (svc) {
-            tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${svc.plate}<div class="sub">${svc.model || ""}</div></td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td><span class="badge b-scheduled">Booked</span></td></tr>`;
+            let statusHtml = '<div class="status-cell">';
+            statusHtml += `<span class="badge b-booked-pill">Booked</span>`;
+
+            if (
+              String(svc.n1d_status || "")
+                .trim()
+                .toUpperCase() === "CONFIRMED"
+            ) {
+              statusHtml += `<span class="badge b-n1d-pill">N-1D</span>`;
+            }
+            if (
+              String(svc.n1h_status || "")
+                .trim()
+                .toUpperCase() === "CONFIRMED"
+            ) {
+              statusHtml += `<span class="badge b-n1h-pill">N-1H</span>`;
+            }
+            statusHtml += "</div>";
+
+            tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">30 min recep.</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${svc.plate}<div class="sub">${svc.model || ""}</div></td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
           } else {
             tableHtml += `<tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;"><td style="color: #9a9aa0;">${slotTime}</td><td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot</span></td></tr>`;
           }
