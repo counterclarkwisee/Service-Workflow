@@ -1412,9 +1412,10 @@
         const isToday = d === today;
         const dayServices = s.servicesByDate[d] || [];
         const statusFilter = document.getElementById("f_status").value;
-        const visible = dayServices.filter(
-          (x) => !statusFilter || x.status === statusFilter,
-        );
+        const visible = dayServices.filter((x) => {
+          if (statusFilter) return x.status === statusFilter;
+          return x.status === "booked" || x.status === "scheduled";
+        });
 
         let tableHtml = "";
         FULL_SCHEDULE_SLOTS.forEach((slotTime) => {
