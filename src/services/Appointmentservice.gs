@@ -12,13 +12,8 @@ const AppointmentService = (function () {
     const services = ServiceRepo.listAll();
     const appointments = AppointmentRepo.listAll();
 
-    // Fetch mapping from data_fields sheet
     const serviceData = DataFieldsRepo.getMapping();
-
-    // Fetch dynamic Source list from Column K
     const sources = DataFieldsRepo.getSourceList();
-
-    // Fetch GJ specific list from the repository
     const gjCommonJobs = GJServiceRequestRepo.listCommonJobs();
 
     const customers = CustomerRepo.listAll();
@@ -28,7 +23,6 @@ const AppointmentService = (function () {
       .filter((name) => name)
       .sort();
 
-    // Fetch SKU Models directly from the 'sku' sheet
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const skuSheet = ss.getSheetByName("sku");
     let skuModels = [];
@@ -64,7 +58,8 @@ const AppointmentService = (function () {
         dur: Number(s.current_duration_minutes) || 60,
         bay: s.current_bay_id,
         type: s.service_type,
-        status: appt.status || s.status || "scheduled", // Map from appointments sheet Column O
+        service_category: appt.service_category || "", // Added to reflect in UI
+        status: appt.status || s.status || "scheduled",
         lastName: appt.last_name,
         firstName: appt.first_name,
         contact: appt.client_phone,
@@ -95,26 +90,15 @@ const AppointmentService = (function () {
     };
   }
 
-  /**
-   * BULLETPROOF MATCHING:
-   * Strips spaces, commas, and "CHECK UP" from both DB and User Input to ensure a 100% match.
-   */
   function getRequiredRepairTime(model, kmSeries) {
-    console.log(
-      `[BACKEND] getRequiredRepairTime called. Model: "${model}", KM Series: "${kmSeries}"`,
-    );
-
     const allRequests = PMSServiceRequestRepo.listAll();
     const branch = BRANCH_CODE.toUpperCase();
-
-    const normalize = (str) => {
-      return String(str || "")
+    const normalize = (str) =>
+      String(str || "")
         .toUpperCase()
         .replace(/CHECK\s*UP/g, "")
         .replace(/,/g, "")
         .replace(/\s+/g, "");
-    };
-
     const targetKm = normalize(kmSeries);
     const targetModel = String(model || "")
       .toUpperCase()
@@ -125,7 +109,6 @@ const AppointmentService = (function () {
       const rowModelStr = String(r.model || "").toUpperCase();
       const rowBranch = String(r.branch || "").toUpperCase();
       const modelsArray = rowModelStr.split(",").map((m) => m.trim());
-
       return (
         rowKm === targetKm &&
         modelsArray.includes(targetModel) &&
@@ -140,9 +123,6 @@ const AppointmentService = (function () {
     return 60;
   }
 
-  /**
-   * NEW: Updates Appointment Status, Remarks, and creates new rows if Rescheduled
-   */
   function updateAppointmentStatus(p, user) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const apptSheet = ss.getSheetByName("appointments");
@@ -150,7 +130,6 @@ const AppointmentService = (function () {
     const userEmail =
       user && user.email ? user.email : Session.getActiveUser().getEmail();
 
-    // 1. Conflict Check Before Doing Anything
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const conflict = _getConflictingBayName(
@@ -160,58 +139,45 @@ const AppointmentService = (function () {
       );
       if (conflict) {
         throw new Error(
-          "Cannot reschedule: " +
-            conflict +
-            " is already booked at " +
-            p.newTime +
-            " on " +
-            p.newDate +
-            ". Please clear the bay first.",
+          "Cannot reschedule: " + conflict + " is already booked.",
         );
       }
     }
 
-    // 2. Find row index of the existing appointment
     let rowIndex = -1;
     for (let i = 1; i < apptData.length; i++) {
       if (apptData[i][0] === p.appointment_id) {
-        rowIndex = i + 1; // +1 for 1-based index
+        rowIndex = i + 1;
         break;
       }
     }
 
     if (rowIndex === -1) throw new Error("Appointment ID not found.");
 
-    // 3. Update old row (Column O = index 14, Column P = index 15)
     apptSheet.getRange(rowIndex, 15).setValue(p.status);
     apptSheet.getRange(rowIndex, 16).setValue(p.status_remarks);
     apptSheet.getRange(rowIndex, 22).setValue(new Date());
     apptSheet.getRange(rowIndex, 23).setValue(userEmail);
 
-    // 4. Free up grid by updating the specific service row status
     if (p.status === "Canceled" || p.status === "Rescheduled") {
       const svcSheet = ss.getSheetByName("services");
       const svcData = svcSheet.getDataRange().getValues();
       for (let i = 1; i < svcData.length; i++) {
         if (svcData[i][1] === p.appointment_id) {
-          // Update service status (assuming column L / 12th column is Status)
           svcSheet.getRange(i + 1, 12).setValue(p.status.toLowerCase());
           break;
         }
       }
     }
 
-    // 5. Automatically book the new appointment using the new date and time
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
-
       const newP = {
         ...p,
         date: p.newDate,
         start: newWorkshopStart,
         apptArrival: p.newTime,
       };
-
       bookAppointment(newP, { email: userEmail });
     }
 
@@ -233,7 +199,7 @@ const AppointmentService = (function () {
         s.current_start_time === startTime &&
         s.status !== "cancelled" &&
         s.status !== "canceled" &&
-        s.status !== "rescheduled" // Ensure we don't conflict with freed slots
+        s.status !== "rescheduled"
       );
     });
 
@@ -269,9 +235,14 @@ const AppointmentService = (function () {
       appointment_date: p.date,
       scheduled_arrival_time: arrivalTime,
       assigned_advisor_name: p.advisor || "",
+      service_category: p.category || "", // Now mapped and stored
       source: p.source || "",
       status: "booked",
       status_remarks: "",
+      assignee_last_name: p.assigneeLast || "",
+      assignee_first_name: p.assigneeFirst || "",
+      assignee_contact: p.assigneeContact || "",
+      remarks: p.remarks || "",
       last_modified_at: now,
       last_modified_by: user.email,
     };
@@ -329,7 +300,6 @@ const AppointmentService = (function () {
         .toUpperCase();
       return dealerVal === BRANCH_CODE.toUpperCase();
     });
-
     return filteredAdvisors.map((u) => ({
       name: (u.team_member || "Unknown Advisor").trim(),
     }));
@@ -339,6 +309,6 @@ const AppointmentService = (function () {
     getState: getState,
     bookAppointment: bookAppointment,
     getRequiredRepairTime: getRequiredRepairTime,
-    updateAppointmentStatus: updateAppointmentStatus, // Exposed to global
+    updateAppointmentStatus: updateAppointmentStatus,
   };
 })();

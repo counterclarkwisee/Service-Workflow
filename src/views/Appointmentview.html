@@ -1134,6 +1134,19 @@
       });
       document.getElementById("f_date").value = today;
 
+      function getCategoryColor(cat) {
+        switch (String(cat).toUpperCase()) {
+          case "EM":
+            return "#eb0a1e";
+          case "PMS":
+            return "#005aab";
+          case "GJ":
+            return "#1e8e3e";
+          default:
+            return "#6b6b70";
+        }
+      }
+
       function updateEndTimeFromStart() {
         const startVal = document.getElementById("f_start").value;
         if (!startVal) return;
@@ -1465,7 +1478,8 @@
               const name = `${svc.lastName}, ${svc.firstName || ""}`
                 .trim()
                 .replace(/,$/, "");
-              h += `<td colspan="${span}" class="${nowCls}"><div class="block s-${svc.status}"><div class="name">${name}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
+              const catColor = getCategoryColor(svc.service_category);
+              h += `<td colspan="${span}" class="${nowCls}"><div class="block s-${svc.status}" style="border-left-color: ${catColor}; background-color: ${catColor}15;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><div class="name" style="color: ${catColor};">${name}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
               i += span;
             } else {
               h += `<td class="free${nowCls}" onclick="openModal('${b.id}','${slot}')"></td>`;
@@ -1523,7 +1537,7 @@
           document.getElementById("f_year").value = existingData.year || "";
 
           document.getElementById("f_category").innerHTML =
-            `<option>PMS/EM</option>`;
+            `<option>${existingData.service_category || ""}</option>`;
           document.getElementById("f_type").innerHTML =
             `<option>${existingData.type}</option>`;
           document.getElementById("f_advisor").innerHTML =
@@ -1559,6 +1573,7 @@
             "f_type",
             "f_advisor",
             "f_start",
+            "f_source",
           ];
           lockIds.forEach((id) => {
             const el = document.getElementById(id);
@@ -1590,10 +1605,15 @@
           idsToReset.forEach((id) => {
             const el = document.getElementById(id);
             if (el.tagName === "SELECT") {
-              el.innerHTML =
-                id === "f_category"
-                  ? '<option value="">— Select Category —</option>'
-                  : '<option value="">— Select —</option>';
+              if (id === "f_category") {
+                el.innerHTML =
+                  '<option value="">— Select Category —</option>' +
+                  (STATE.serviceCategories || [])
+                    .map((cat) => `<option value="${cat}">${cat}</option>`)
+                    .join("");
+              } else {
+                el.innerHTML = '<option value="">— Select —</option>';
+              }
               el.disabled = false;
             } else {
               el.value = "";
@@ -1764,6 +1784,7 @@
           status_remarks: currentReason || "",
           newDate: newDate,
           newTime: newTime,
+          category: val("f_category"),
         };
 
         const serverFunc =
