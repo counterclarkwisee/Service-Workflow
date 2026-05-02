@@ -3,135 +3,135 @@
   <head>
     <base target="_top" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
       :root {
         --primary-blue: #3b82f6;
         --active-teal: #14b8a6;
-        --bg-light: #f9fafb;
-        --text-main: #374151;
-        --text-subtle: #6b7280;
-        --border-color: #e5e7eb;
-        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --bg-light: #f4f4f6;
+        --text-main: #1a1a1a;
+        --text-subtle: #6b6b70;
+        --border-color: #d9d9dc;
+        --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
       }
 
       body {
-        font-family: "Roboto", sans-serif;
+        font-family: "Inter", sans-serif;
         background-color: var(--bg-light);
         color: var(--text-main);
         margin: 0;
         padding: 30px;
         display: flex;
         flex-direction: column;
-        gap: 25px;
+        gap: 20px;
       }
 
-      /* --- HEADER FIX: SIDE BY SIDE --- */
+      /* --- HEADER --- */
       .reception-header {
         display: flex;
         justify-content: space-between;
-        align-items: center; /* Changed to center to prevent vertical stacking */
-        width: 100%;
+        align-items: center;
+        background: #fff;
+        padding: 14px 20px;
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
       }
 
-      .greeting {
-        flex-shrink: 0;
-      }
       .greeting h1 {
         margin: 0;
-        font-size: 26px;
+        font-size: 22px;
         font-weight: 700;
+        color: var(--text-main);
       }
       .greeting p {
-        margin: 4px 0 0;
+        margin: 2px 0 0;
         color: var(--text-subtle);
-        font-size: 14px;
+        font-size: 13px;
       }
 
       .header-right {
         display: flex;
         align-items: center;
-        gap: 15px;
-        flex-shrink: 0;
+        gap: 12px;
       }
 
       .search-input-wrapper {
         position: relative;
-        width: 320px; /* Fixed width to prevent squashing */
+        width: 300px;
       }
       .search-input {
         width: 100%;
-        padding: 10px 12px 10px 38px;
+        padding: 8px 12px 8px 35px;
         border: 1px solid var(--border-color);
         border-radius: 8px;
-        font-size: 14px;
+        font: 13px Inter;
         outline: none;
-        background: #fff;
+      }
+      .search-input:focus {
+        border-color: var(--primary-blue);
       }
       .search-icon {
         position: absolute;
-        left: 14px;
+        left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        opacity: 0.4;
-        pointer-events: none;
+        opacity: 0.5;
+        font-size: 14px;
       }
 
       .btn-nav {
-        padding: 10px 18px;
+        padding: 8px 16px;
         border-radius: 8px;
         border: 1px solid var(--border-color);
         background: #fff;
-        color: var(--text-main);
-        font-weight: 600;
+        color: #3c3c3c;
+        font: 600 13px Inter;
         cursor: pointer;
-        font-size: 13px;
-        white-space: nowrap;
         transition: all 0.2s;
-        box-shadow: var(--shadow-sm);
       }
       .btn-nav:hover {
-        background: #f3f4f6;
-        border-color: #d1d5db;
+        background: #fdecee;
+        color: #eb0a1e;
+        border-color: #eb0a1e;
       }
 
       /* --- METRICS --- */
       .metrics-container {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
+        gap: 16px;
       }
       .metric-card {
         background: #fff;
-        padding: 20px;
+        padding: 18px;
         border-radius: 12px;
         box-shadow: var(--shadow-sm);
-        border-left: 4px solid #ddd;
+        border-top: 3px solid var(--border-color);
       }
       .metric-card.arrived {
-        border-left-color: var(--active-teal);
+        border-top-color: var(--active-teal);
       }
       .metric-title {
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 600;
         color: var(--text-subtle);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.6px;
       }
       .metric-value {
-        font-size: 32px;
+        font-size: 28px;
         font-weight: 700;
-        margin: 5px 0;
+        margin: 4px 0;
+        color: var(--text-main);
       }
 
-      /* --- BALANCED GRID --- */
+      /* --- TABLE --- */
       .checkin-list-wrapper {
         background: #fff;
         border-radius: 12px;
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-sm);
         overflow: hidden;
       }
 
@@ -141,165 +141,165 @@
         table-layout: fixed;
       }
       .recept-table th {
-        background: #f3f4f6;
-        padding: 16px;
+        background: #f4f4f6;
+        padding: 12px 16px;
         text-align: left;
         color: var(--text-subtle);
-        font-size: 11px;
+        font-size: 10px;
+        font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
+        border-bottom: 1px solid #ececef;
       }
       .recept-table td {
-        padding: 18px 16px;
-        border-bottom: 1px solid var(--border-color);
+        padding: 14px 16px;
+        border-bottom: 1px solid #ececef;
         vertical-align: middle;
+        font-size: 13px;
+      }
+      .recept-table tr:hover {
+        background-color: #fafafb;
       }
 
-      /* Column Width Logic to pull items inward */
       .w-time {
-        width: 10%;
+        width: 80px;
       }
       .w-veh {
-        width: 18%;
+        width: 160px;
       }
       .w-cust {
-        width: 22%;
+        width: 200px;
       }
       .w-adv {
-        width: 15%;
+        width: 150px;
       }
       .w-conf {
-        width: 12%;
+        width: 100px;
       }
       .w-act {
-        width: 23%;
+        width: 320px;
       }
 
       .plate-badge {
-        background: #eff6ff;
-        color: var(--primary-blue);
+        background: #ececef;
+        color: var(--text-main);
         padding: 4px 8px;
         border-radius: 6px;
-        font-weight: 700;
+        font-weight: 600;
         font-family: monospace;
-        font-size: 13px;
+        font-size: 12px;
         display: inline-block;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
       }
       .vehicle-model {
         display: block;
         font-size: 11px;
         color: var(--text-subtle);
-        text-transform: uppercase;
-        font-weight: 500;
       }
       .customer-info {
-        font-weight: 700;
-        font-size: 14px;
-        color: #1f2937;
+        font-weight: 600;
+        color: var(--text-main);
       }
       .customer-sub {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-subtle);
       }
 
-      /* --- CONFIRMATION CHIPS --- */
+      /* --- CHIPS --- */
       .conf-wrapper {
         display: flex;
-        gap: 8px;
+        gap: 6px;
       }
       .conf-chip {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
+        width: 34px;
+        height: 34px;
         border-radius: 8px;
         border: 1px solid var(--border-color);
         font-size: 9px;
-        font-weight: 800;
-        color: var(--text-subtle);
+        font-weight: 600;
         background: #fff;
+        color: var(--text-subtle);
       }
       .conf-chip span {
         font-size: 12px;
         margin-bottom: -1px;
       }
       .conf-done {
-        background-color: #ecfdf5;
-        border-color: #10b981;
-        color: #047857;
+        background-color: #e6f4ea;
+        border-color: #1e8e3e;
+        color: #0f5c26;
       }
       .conf-nr {
-        background-color: #fff7ed;
-        border-color: #f97316;
-        color: #9a3412;
+        background-color: #f1f3f5;
+        border-color: #ced4da;
+        color: #495057;
       }
 
-      /* --- ACTION CELL --- */
+      /* --- ACTION CONTROLS --- */
       .action-cell {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 12px;
         justify-content: flex-end;
       }
+
       .radio-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px;
-        width: 180px;
+        display: flex;
+        background: #ececef;
+        padding: 3px;
+        border-radius: 10px;
+        gap: 2px;
       }
       .radio-item {
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        padding: 6px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 7px;
         cursor: pointer;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 600;
-        color: var(--text-subtle);
+        color: #3c3c3c;
         transition: all 0.2s;
-      }
-      .radio-item.selected {
-        border-color: var(--primary-blue);
-        background: #eff6ff;
-        color: var(--primary-blue);
+        user-select: none;
       }
       .radio-item input {
-        margin: 0;
+        display: none;
+      }
+      .radio-item.selected {
+        background: #fff;
+        color: var(--text-main);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
 
       .btn-confirm-arrival {
-        background-color: var(--active-teal);
+        background-color: #eb0a1e;
         color: #fff;
-        padding: 10px 14px;
+        padding: 8px 16px;
         border: none;
         border-radius: 8px;
-        font-weight: 700;
+        font-weight: 600;
         font-size: 12px;
         cursor: pointer;
         white-space: nowrap;
-        transition: opacity 0.2s;
       }
       .btn-confirm-arrival:hover {
-        background-color: #0f9b8a;
+        background-color: #c00819;
       }
 
       #toast {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #1f2937;
+        background: #1a1a1a;
         color: #fff;
-        padding: 14px 28px;
+        padding: 14px 24px;
         border-radius: 8px;
         display: none;
         z-index: 1000;
-        box-shadow: var(--shadow-md);
-        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-weight: 600;
       }
     </style>
   </head>
@@ -307,7 +307,7 @@
     <div class="reception-header">
       <div class="greeting">
         <h1 id="greetingText">Good Morning</h1>
-        <p id="currentDateDisplay">Reception Desk Loading...</p>
+        <p id="currentDateDisplay">Reception Desk</p>
       </div>
       <div class="header-right">
         <div class="search-input-wrapper">
@@ -328,16 +328,16 @@
 
     <div class="metrics-container">
       <div class="metric-card">
-        <div class="metric-title">Today's Appointments</div>
+        <div class="metric-title">Appointments</div>
         <div class="metric-value" id="count-total">0</div>
       </div>
       <div class="metric-card">
-        <div class="metric-title">Awaiting</div>
+        <div class="metric-title">Expected</div>
         <div class="metric-value" id="count-pending">0</div>
       </div>
       <div class="metric-card arrived">
         <div class="metric-title" style="color: var(--active-teal)">
-          Arrived
+          Checked In
         </div>
         <div class="metric-value" id="count-arrived">0</div>
       </div>
@@ -420,7 +420,7 @@
 
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td><strong style="font-size:15px">${item.start}</strong></td>
+            <td><span style="font-weight:700">${item.start}</span></td>
             <td>
               <span class="plate-badge">${item.plate || item.csNo || "N/A"}</span>
               <span class="vehicle-model">${item.model}</span>
@@ -429,7 +429,7 @@
               <div class="customer-info">${item.lastName}</div>
               <div class="customer-sub">${item.contact || "N/A"}</div>
             </td>
-            <td><div class="customer-sub" style="font-weight:600; color:#374151;">${item.advisor}</div></td>
+            <td><div class="customer-sub" style="font-weight:600">${item.advisor}</div></td>
             <td>
               <div class="conf-wrapper">
                 <div class="conf-chip ${dClass}"><span>D</span>${n1d === "CONFIRMED" ? "OK" : n1d === "NO RESPONSE" ? "NR" : "—"}</div>
@@ -442,14 +442,13 @@
                   !isArrived
                     ? `
                   <div class="radio-grid">
-                    <label class="radio-item selected" onclick="selectRadio(this)"><input type="radio" name="punct_${item.appointment_id}" value="On-Time" checked> On-Time</label>
-                    <label class="radio-item" onclick="selectRadio(this)"><input type="radio" name="punct_${item.appointment_id}" value="Early"> Early</label>
-                    <label class="radio-item" onclick="selectRadio(this)"><input type="radio" name="punct_${item.appointment_id}" value="Late"> Late</label>
-                    <div style="visibility:hidden"></div>
+                    <label class="radio-item selected" onclick="selectRadio(this)"><input type="radio" name="punct_${item.appointment_id}" value="On-Time" checked>On-Time</label>
+                    <label class="radio-item" onclick="selectRadio(this)"><input type="radio" name="punct_${item.appointment_id}" value="Early">Early</label>
+                    <label class="radio-item" onclick="selectRadio(this)"><input type="radio" name="punct_${item.appointment_id}" value="Late">Late</label>
                   </div>
-                  <button class="btn-confirm-arrival" onclick="markArrived('${item.appointment_id}')">Confirm Arrival</button>
+                  <button class="btn-confirm-arrival" onclick="markArrived('${item.appointment_id}')">Arrived</button>
                 `
-                    : `<span style="color:var(--active-teal); font-weight:800; font-size:12px;">✓ ARRIVED</span>`
+                    : `<span style="color:var(--active-teal); font-weight:700; font-size:12px;">✓ ARRIVED</span>`
                 }
               </div>
             </td>
