@@ -1543,6 +1543,7 @@
           start,
           date: currentDate(),
           appointment_id: existingData ? existingData.appointment_id : null,
+          status: existingData ? existingData.status : "booked",
         };
         const modal = document.getElementById("modal"),
           drawer = modal.querySelector(".drawer"),
@@ -1585,7 +1586,7 @@
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
 
-          // Visibility Logic (STRICT: Only hide if status is exactly CONFIRMED)
+          // Visibility Logic (Only hide if status is exactly CONFIRMED)
           const n1dVal = String(existingData.n1d_status || "")
             .trim()
             .toUpperCase();
@@ -1735,18 +1736,26 @@
           .textContent.includes("Edit")
           ? "edit"
           : "create";
-        const currentStatus = selectedConfH1 || selectedConfN1,
-          currentReason = val("f_h1_reason") || val("f_n1_reason");
+
+        const confStatus = selectedConfH1 || selectedConfN1;
+        const currentReason = val("f_h1_reason") || val("f_n1_reason");
+
+        let finalStatus = picked.status || "booked";
+        if (confStatus === "Rescheduled" || confStatus === "Canceled") {
+          finalStatus = confStatus;
+        }
+
         if (
-          (currentStatus === "Rescheduled" || currentStatus === "Canceled") &&
+          (confStatus === "Rescheduled" || confStatus === "Canceled") &&
           !currentReason
         ) {
           alert("Please enter a reason.");
           return;
         }
+
         let nDate = "",
           nTime = "";
-        if (currentStatus === "Rescheduled") {
+        if (confStatus === "Rescheduled") {
           nDate =
             selectedConfH1 === "Rescheduled"
               ? val("f_h1_reschedule_date")
@@ -1795,13 +1804,14 @@
           assigneeFirst: val("f_assFirst"),
           assigneeContact: val("f_assContact"),
           remarks: val("f_remarks"),
-          status: currentStatus || "booked",
+          status: finalStatus,
           status_remarks: currentReason || "",
           newDate: nDate,
           newTime: nTime,
           category: val("f_category"),
           n1_conf: selectedConfN1,
           h1_conf: selectedConfH1,
+          reschedule_id: picked.appointment_id,
         };
         const serverFunc =
           mode === "edit" ? "updateAppointmentStatus" : "bookService";

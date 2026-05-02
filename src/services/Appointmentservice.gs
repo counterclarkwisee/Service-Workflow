@@ -200,7 +200,7 @@ const AppointmentService = (function () {
         date: p.newDate,
         start: newWorkshopStart,
         apptArrival: p.newTime,
-        rescheduled_id: p.appointment_id, // Pass current ID as the Trace ID for the new row
+        reschedule_id: p.appointment_id, // Pass current ID as the Trace ID for the new row
       };
       bookAppointment(newP, { email: userEmail });
     }
@@ -261,7 +261,7 @@ const AppointmentService = (function () {
       assigned_advisor_name: p.advisor || "",
       service_category: p.category || "", // Column O
       status: "booked", // Column P
-      rescheduled_id: p.rescheduled_id || "", // Column Q
+      reschedule_id: p.reschedule_id || "", // Column Q
       source: p.source || "",
       status_remarks: "", // Column T
       assignee_last_name: p.assigneeLast || "",
