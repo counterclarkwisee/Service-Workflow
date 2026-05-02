@@ -74,10 +74,10 @@ const AppointmentService = (function () {
         assigneeContact: appt.assignee_contact || "",
         n1d_status: appt.n1d_confirmation || "",
         n1h_status: appt.n1h_confirmation || "",
+        olb_no: appt.olb_no || "", // Added mapping for UI retrieval
       });
     });
 
-    // Fetch dynamic slot capacities from receiving_time_slots DB
     const receivingSlots = _getReceivingSlots(BRANCH_CODE);
 
     return {
@@ -92,7 +92,7 @@ const AppointmentService = (function () {
       skuModels: skuModels,
       gjCommonJobs: gjCommonJobs,
       sources: sources,
-      receivingSlots: receivingSlots, // Integrated dynamic slots
+      receivingSlots: receivingSlots,
     };
   }
 
@@ -136,7 +136,6 @@ const AppointmentService = (function () {
     const userEmail =
       user && user.email ? user.email : Session.getActiveUser().getEmail();
 
-    // 1. Conflict Check for Rescheduling
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const conflict = _getConflictingBayName(
@@ -151,7 +150,6 @@ const AppointmentService = (function () {
       }
     }
 
-    // 2. Find row index
     let rowIndex = -1;
     for (let i = 1; i < apptData.length; i++) {
       if (apptData[i][0] === p.appointment_id) {
@@ -162,12 +160,11 @@ const AppointmentService = (function () {
 
     if (rowIndex === -1) throw new Error("Appointment ID not found.");
 
-    // 3. Update Category (O), Status (P), and Remarks (T)
+    // Update Category (O), Status (P)
     apptSheet.getRange(rowIndex, 15).setValue(p.category);
     apptSheet.getRange(rowIndex, 16).setValue(p.status);
-    apptSheet.getRange(rowIndex, 20).setValue(p.status_remarks);
 
-    // 4. Update Confirmations (Cols R & S)
+    // Update Confirmations (Cols R & S)
     if (p.n1_conf === "Confirm") {
       apptSheet.getRange(rowIndex, 18).setValue("CONFIRMED");
     } else if (p.n1_conf) {
@@ -180,11 +177,14 @@ const AppointmentService = (function () {
       apptSheet.getRange(rowIndex, 19).setValue(p.h1_conf.toUpperCase());
     }
 
-    // 5. Update Audit Trail
-    apptSheet.getRange(rowIndex, 23).setValue(new Date());
-    apptSheet.getRange(rowIndex, 24).setValue(userEmail);
+    // Update Remarks (T) and OLB Number (U)
+    apptSheet.getRange(rowIndex, 20).setValue(p.status_remarks);
+    apptSheet.getRange(rowIndex, 21).setValue(p.olb_no || ""); // Column U
 
-    // 6. Handle Service Grid Cleanup
+    // Update Audit Trail (Shifted to Z and AA based on shifted columns)
+    apptSheet.getRange(rowIndex, 26).setValue(new Date()); // Column Z
+    apptSheet.getRange(rowIndex, 27).setValue(userEmail); // Column AA
+
     if (p.status === "Canceled" || p.status === "Rescheduled") {
       const svcSheet = ss.getSheetByName("services");
       const svcData = svcSheet.getDataRange().getValues();
@@ -196,7 +196,6 @@ const AppointmentService = (function () {
       }
     }
 
-    // 7. Handle New Row Creation for Rescheduled with Traceability ID
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const newP = {
@@ -268,6 +267,7 @@ const AppointmentService = (function () {
       reschedule_id: p.reschedule_id || "",
       source: p.source || "",
       status_remarks: "",
+      olb_no: p.olb_no || "", // Saved to Column U via Repo insert
       assignee_last_name: p.assigneeLast || "",
       assignee_first_name: p.assigneeFirst || "",
       assignee_contact: p.assigneeContact || "",
@@ -334,10 +334,6 @@ const AppointmentService = (function () {
     }));
   }
 
-  /**
-   * NEW: Reads slot capacity from receiving_time_slots sheet
-   * Handles headers at row 2, data from row 3
-   */
   function _getReceivingSlots(branchCode) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName("receiving_time_slots");
@@ -346,7 +342,6 @@ const AppointmentService = (function () {
     const lastRow = sheet.getLastRow();
     if (lastRow < 3) return [];
 
-    // Row 2 contains headers (col A: RECEIVING TIME, col B: TLB, col C: TLC)
     const data = sheet
       .getRange(2, 1, lastRow - 1, sheet.getLastColumn())
       .getValues();
@@ -356,7 +351,6 @@ const AppointmentService = (function () {
     if (branchColIdx === -1) return [];
 
     const slots = [];
-    // Data starts at row 3 (index 1 of the 'data' array)
     for (let i = 1; i < data.length; i++) {
       const rawTime = data[i][0];
       const capacityRaw = data[i][branchColIdx];

@@ -1019,6 +1019,15 @@
           <div id="confirmationSection" style="display: none">
             <div class="section">
               <div class="section-title">📞 Confirmation Status</div>
+
+              <div class="field" style="margin-bottom: 20px">
+                <label>OLB Number</label>
+                <input
+                  type="text"
+                  id="f_olb_no"
+                  placeholder="Enter OLB Number"
+                />
+              </div>
               <div id="n1d_section_wrapper">
                 <div class="field">
                   <label>N-1D Confirmation (1 Day Before)</label>
@@ -1169,28 +1178,6 @@
     </div>
 
     <script>
-      const SLOTS = [
-        "08:00",
-        "08:30",
-        "09:00",
-        "09:30",
-        "10:00",
-        "10:30",
-        "11:00",
-        "11:30",
-        "12:00",
-        "12:30",
-        "13:00",
-        "13:30",
-        "14:00",
-        "14:30",
-        "15:00",
-        "15:30",
-        "16:00",
-        "16:30",
-        "17:00",
-      ];
-
       let STATE = null,
         picked = null,
         ALL_CUSTOMERS = [],
@@ -1198,6 +1185,7 @@
         currentDuration = 60;
       let selectedConfN1 = "",
         selectedConfH1 = "";
+      window.view = "both";
 
       const today = new Date().toLocaleDateString("en-CA", {
         timeZone: "Asia/Manila",
@@ -1653,6 +1641,10 @@
             existingData.assigneeFirst || "";
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
+
+          // POPULATE OLB NO
+          document.getElementById("f_olb_no").value = existingData.olb_no || "";
+
           const n1dVal = String(existingData.n1d_status || "")
             .trim()
             .toUpperCase();
@@ -1712,6 +1704,7 @@
             "f_advisor",
             "f_start",
             "f_source",
+            "f_olb_no",
           ].forEach((id) => {
             const el = document.getElementById(id);
             if (el.tagName === "SELECT") {
@@ -1868,6 +1861,7 @@
           n1_conf: selectedConfN1,
           h1_conf: selectedConfH1,
           reschedule_id: picked.appointment_id,
+          olb_no: val("f_olb_no"), // CAPTURE OLB NO
         };
         const serverFunc =
           mode === "edit" ? "updateAppointmentStatus" : "bookService";
