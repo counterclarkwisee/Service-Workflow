@@ -78,6 +78,7 @@ const AppointmentService = (function () {
       });
     });
 
+    // Fetch dynamic slot capacities from receiving_time_slots DB
     const receivingSlots = _getReceivingSlots(BRANCH_CODE);
 
     return {
@@ -92,7 +93,7 @@ const AppointmentService = (function () {
       skuModels: skuModels,
       gjCommonJobs: gjCommonJobs,
       sources: sources,
-      receivingSlots: receivingSlots,
+      receivingSlots: receivingSlots, // Integrated dynamic slots
     };
   }
 
@@ -297,6 +298,51 @@ const AppointmentService = (function () {
     ServiceRepo.insert(service);
   }
 
+  /**
+   * Updates slot capacities in the receiving_time_slots sheet.
+   */
+  function updateSlotCapacities(updatedSlots) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("receiving_time_slots");
+    if (!sheet) throw new Error("Sheet 'receiving_time_slots' not found.");
+
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    // Headers are at row 2
+    const headers = sheet
+      .getRange(2, 1, 1, lastCol)
+      .getValues()[0]
+      .map((h) => String(h).toUpperCase().trim());
+    const branchColIdx = headers.indexOf(BRANCH_CODE.toUpperCase());
+
+    if (branchColIdx === -1)
+      throw new Error(
+        "Branch column '" + BRANCH_CODE + "' not found in headers.",
+      );
+
+    const dataRange = sheet.getRange(3, 1, lastRow - 2, lastCol);
+    const data = dataRange.getValues();
+
+    updatedSlots.forEach((update) => {
+      for (let i = 0; i < data.length; i++) {
+        let rowTimeRaw = data[i][0];
+        let rowTime = "";
+        if (Object.prototype.toString.call(rowTimeRaw) === "[object Date]") {
+          rowTime = Utilities.formatDate(rowTimeRaw, "Asia/Manila", "HH:mm");
+        } else {
+          rowTime = String(rowTimeRaw).trim();
+        }
+
+        if (rowTime === update.time) {
+          // branchColIdx is 0-based, so branchColIdx + 1 is the column number.
+          sheet.getRange(i + 3, branchColIdx + 1).setValue(update.capacity);
+          break;
+        }
+      }
+    });
+    return getState();
+  }
+
   function _subtractMinutes(timeStr, minsToSubtract) {
     const [h, m] = timeStr.split(":").map(Number);
     let date = new Date();
@@ -387,5 +433,6 @@ const AppointmentService = (function () {
     bookAppointment: bookAppointment,
     getRequiredRepairTime: getRequiredRepairTime,
     updateAppointmentStatus: updateAppointmentStatus,
+    updateSlotCapacities: updateSlotCapacities, // Exposed for Code.gs call
   };
 })();

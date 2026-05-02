@@ -787,6 +787,36 @@
         font-size: 11px;
         color: #6b6b70;
       }
+
+      /* --- SA ADJUSTMENTS STEPPER STYLES --- */
+      .sa-stepper-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #fff;
+        padding: 10px 14px;
+        border: 1px solid #ececef;
+        border-radius: 10px;
+        margin-bottom: 8px;
+      }
+      .sa-time {
+        font-weight: 700;
+        font-size: 14px;
+        color: #1a1a1a;
+        width: 60px;
+      }
+      .sa-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      .sa-val {
+        font-weight: 700;
+        font-size: 16px;
+        color: #eb0a1e;
+        min-width: 20px;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
@@ -845,6 +875,15 @@
               <h3>📋 Appointments</h3>
               <span class="count" id="tableCount">0</span>
             </div>
+            <div class="right-grp">
+              <button
+                class="btn ghost"
+                onclick="openSAAdjustments()"
+                style="border-color: #eb0a1e; color: #eb0a1e"
+              >
+                SA Adjustments
+              </button>
+            </div>
           </div>
           <div class="pane-body">
             <table class="tbl" id="tbl">
@@ -872,6 +911,41 @@
         </div>
       </div>
     </main>
+
+    <div class="modal" id="saModal">
+      <div class="drawer">
+        <div class="dhead">
+          <div>
+            <h2>SA Adjustments</h2>
+            <div class="sub">Toyota Service Management</div>
+          </div>
+          <button class="close" onclick="closeSAModal()">×</button>
+        </div>
+        <div class="dbody">
+          <div class="section">
+            <div class="section-title">⏰ Time Slots</div>
+            <div
+              id="sa_stepper_container"
+              style="display: flex; flex-direction: column; gap: 4px"
+            >
+              <div style="text-align: center; color: #6b6b70; padding: 20px">
+                Loading slots...
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dactions">
+          <button class="btn" onclick="closeSAModal()">Cancel</button>
+          <button
+            class="btn primary"
+            id="saveSABtn"
+            onclick="saveSAAdjustments()"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div class="modal" id="modal">
       <div class="drawer">
@@ -1500,7 +1574,6 @@
             let statusHtml = '<div class="status-cell">';
             statusHtml += `<span class="badge b-navy-pill">Booked</span>`;
 
-            // --- WITH OLB BADGE LOGIC ---
             const olbVal = String(svc.olb_no || "").trim();
             if (olbVal !== "") {
               statusHtml += `<span class="badge b-navy-pill">WITH OLB</span>`;
@@ -1649,7 +1722,6 @@
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
 
-          // --- OLB VISIBILITY LOGIC ---
           const olbVal = (existingData.olb_no || "").trim();
           document.getElementById("f_olb_no").value = olbVal;
           document.getElementById("olb_field_container").style.display =
@@ -1752,6 +1824,75 @@
           setTimeout(() => {
             drawer.scrollTo({ top: drawer.scrollHeight, behavior: "smooth" });
           }, 300);
+      }
+
+      // Open the new SA Modal
+      function openSAAdjustments() {
+        const container = document.getElementById("sa_stepper_container");
+        container.innerHTML = "";
+
+        if (!STATE || !STATE.receivingSlots) {
+          showToast("Error: No slot data found", "error");
+          return;
+        }
+
+        STATE.receivingSlots.forEach((slot, index) => {
+          const row = document.createElement("div");
+          row.className = "sa-stepper-row";
+          row.innerHTML = `
+            <div class="sa-time">${slot.time}</div>
+            <div class="sa-controls">
+              <button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, -1)">−</button>
+              <div class="sa-val" id="sa_val_${index}">${slot.capacity}</div>
+              <button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, 1)">+</button>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+
+        document.getElementById("saModal").classList.add("show");
+      }
+
+      function closeSAModal() {
+        document.getElementById("saModal").classList.remove("show");
+      }
+
+      function adjustSASlot(index, delta) {
+        const valEl = document.getElementById(`sa_val_${index}`);
+        let current = parseInt(valEl.textContent);
+        if (current + delta < 0) return;
+        valEl.textContent = current + delta;
+      }
+
+      function saveSAAdjustments() {
+        const btn = document.getElementById("saveSABtn");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+
+        const updatedSlots = STATE.receivingSlots.map((slot, index) => {
+          return {
+            time: slot.time,
+            capacity: parseInt(
+              document.getElementById(`sa_val_${index}`).textContent,
+            ),
+          };
+        });
+
+        google.script.run
+          .withSuccessHandler((newState) => {
+            STATE = newState;
+            render(newState);
+            closeSAModal();
+            btn.disabled = false;
+            btn.textContent = "Save Changes";
+            showToast("Capacities updated successfully!");
+          })
+          .withFailureHandler((err) => {
+            btn.disabled = false;
+            btn.textContent = "Save Changes";
+            onError(err);
+          })
+          .updateSlotCapacities(updatedSlots);
       }
 
       function setConfirmation(type, value) {
@@ -1901,6 +2042,7 @@
       document.getElementById("f_status").addEventListener("change", refresh);
       document.getElementById("modal").addEventListener("click", (e) => {
         if (e.target.id === "modal") closeModal();
+        if (e.target.id === "saModal") closeSAModal();
       });
 
       updateDateChip();

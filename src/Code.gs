@@ -49,6 +49,18 @@ function updateAppointmentStatus(payload) {
 }
 
 /**
+ * BRIDGE FUNCTION: updateSlotCapacities
+ * Updates the receiving time slot capacities (SA Adjustments)
+ */
+function updateSlotCapacities(payload) {
+  try {
+    return AppointmentService.updateSlotCapacities(payload);
+  } catch (e) {
+    throw new Error("Failed to update capacities: " + e.message);
+  }
+}
+
+/**
  * Fetches the master list of customers for fuzzy matching
  */
 function getCustomerData() {
