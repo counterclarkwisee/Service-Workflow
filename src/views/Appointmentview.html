@@ -856,11 +856,14 @@
         </div>
 
         <div class="viewtoggle">
-          <button id="v_table" onclick="setView('table')">Table</button>
-          <button id="v_both" class="active" onclick="setView('both')">
-            Both
+          <button id="v_table" class="active" onclick="setView('table')">
+            Appointment/MRS
           </button>
-          <button id="v_grid" onclick="setView('grid')">Bay Grid</button>
+          <button id="v_reception" onclick="openReceptionView()">
+            Reception
+          </button>
+          <button id="v_both" onclick="setView('both')">Both</button>
+          <button id="v_grid" onclick="setView('grid')">Job Con</button>
         </div>
 
         <div class="filters-right">
@@ -1257,6 +1260,7 @@
     </div>
 
     <script>
+      const scriptUrl = "<?= scriptUrl ?>";
       let STATE = null,
         picked = null,
         ALL_CUSTOMERS = [],
@@ -1480,6 +1484,12 @@
                 ? "Yesterday · " + label
                 : label;
       }
+
+      function openReceptionView() {
+        const url = scriptUrl + "?page=reception";
+        window.open(url, "_top");
+      }
+
       function setView(v) {
         view = v;
         const s = document.getElementById("split");
@@ -1490,9 +1500,11 @@
           v === "grid" ? "none" : "flex";
         document.getElementById("gridPane").style.display =
           v === "table" ? "none" : "flex";
-        ["table", "both", "grid"].forEach((x) =>
-          document.getElementById("v_" + x).classList.toggle("active", x === v),
-        );
+
+        ["table", "both", "grid"].forEach((x) => {
+          const btn = document.getElementById("v_" + x);
+          if (btn) btn.classList.toggle("active", x === v);
+        });
       }
       function toMin(t) {
         if (!t) return 0;
@@ -1574,7 +1586,6 @@
             let statusHtml = '<div class="status-cell">';
             statusHtml += `<span class="badge b-navy-pill">Booked</span>`;
 
-            // --- WITH OLB BADGE LOGIC ---
             const olbVal = String(svc.olb_no || "").trim();
             if (olbVal !== "") {
               statusHtml += `<span class="badge b-navy-pill">WITH OLB</span>`;
@@ -1774,7 +1785,6 @@
           document.getElementById("n1h_section_wrapper").style.display =
             "block";
 
-          // Clear OLB for Create mode
           document.getElementById("f_olb_no").value = "";
           document.getElementById("olb_field_container").style.display =
             "block";

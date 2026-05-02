@@ -1,0 +1,389 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* --- NEW COLOR PALETTE & LAYOUT --- */
+      :root {
+        --primary-blue: #3b82f6; /* A clean, slate-blue */
+        --active-teal: #14b8a6; /* Teal accent */
+        --bg-light: #f9fafb; /* Soft gray-white */
+        --text-main: #374151; /* Soft charcoal */
+        --text-subtle: #6b7280; /* Muted gray */
+        --border-color: #e5e7eb; /* Subtle borders */
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family: "Roboto", sans-serif;
+        background-color: var(--bg-light);
+        color: var(--text-main);
+        margin: 0;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      /* --- GREETING AND SEARCH ROW --- */
+      .reception-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 30px;
+      }
+
+      .greeting h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .search-input-wrapper {
+        position: relative;
+        flex-grow: 1;
+        max-width: 600px;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 16px 20px 16px 50px;
+        border: 2px solid var(--border-color);
+        border-radius: 40px;
+        font-size: 16px;
+        font-weight: 300;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      .search-input:focus {
+        border-color: var(--primary-blue);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-subtle);
+        font-size: 20px;
+      }
+
+      /* --- METRIC CARDS --- */
+      .metrics-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+
+      .metric-card {
+        background: #fff;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .metric-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .metric-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-subtle);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .metric-value {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--text-main);
+      }
+
+      .metric-footer {
+        font-size: 12px;
+        color: var(--text-subtle);
+      }
+
+      /* Accent color for 'Arrived' */
+      .metric-arrived .metric-value,
+      .metric-arrived .metric-footer {
+        color: var(--active-teal);
+      }
+
+      /* --- CHECK-IN LIST TABLE --- */
+      .checkin-list-wrapper {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+      }
+
+      .recept-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      .recept-table th {
+        background-color: #f3f4f6;
+        padding: 20px;
+        text-align: left;
+        font-weight: 500;
+        color: var(--text-subtle);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .recept-table td {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: top; /* Vertically align top for spacing */
+      }
+
+      .recept-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* Improved Spacing and Layout for the Vehicle Info */
+      .vehicle-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 6px; /* Spacing between plate and model */
+      }
+
+      .plate-badge {
+        background: #eff6ff; /* Very soft blue */
+        color: var(--primary-blue);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-family: monospace;
+        font-size: 15px;
+        align-self: flex-start; /* Don't stretch the badge */
+      }
+
+      .vehicle-model {
+        font-weight: 400;
+        color: var(--text-subtle);
+      }
+
+      .customer-info {
+        font-weight: 500;
+      }
+
+      .customer-contact {
+        color: var(--text-subtle);
+      }
+
+      /* The Arrived Button - Professional Teal */
+      .btn-confirm-arrival {
+        background-color: var(--active-teal);
+        color: #fff;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 30px;
+        font-weight: 500;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .btn-confirm-arrival:hover {
+        background-color: #0f9b8a;
+      }
+
+      /* Toast Notification */
+      #toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #333;
+        color: #fff;
+        padding: 14px 24px;
+        border-radius: 6px;
+        display: none;
+        z-index: 1000;
+        box-shadow: var(--shadow-md);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="reception-header">
+      <div class="greeting">
+        <h1 id="greetingText">Good Morning</h1>
+        <p id="currentDateDisplay">Welcome back to the Reception Desk</p>
+      </div>
+      <div class="search-input-wrapper">
+        <span class="search-icon">&#128269;</span>
+        <input
+          type="text"
+          class="search-input"
+          id="searchBox"
+          placeholder="Search customer, license plate, or CS..."
+          oninput="filterList()"
+        />
+      </div>
+    </div>
+
+    <div class="metrics-container">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Today's Appointments</span>
+        </div>
+        <div class="metric-value" id="count-total">0</div>
+        <div class="metric-footer">Total scheduled</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Pending Arrival</span>
+        </div>
+        <div class="metric-value" id="count-pending">0</div>
+        <div class="metric-footer">Awaiting customer</div>
+      </div>
+      <div class="metric-card metric-arrived">
+        <div class="metric-header">
+          <span class="metric-title">Checked In</span>
+        </div>
+        <div class="metric-value" id="count-arrived">0</div>
+        <div class="metric-footer">✓ Customer is on-site</div>
+      </div>
+    </div>
+
+    <div class="checkin-list-wrapper">
+      <table class="recept-table" id="receptTable">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Vehicle Info</th>
+            <th>Customer</th>
+            <th>Service</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="toast">Arrival status updated successfully.</div>
+
+    <script>
+      let ALL_DATA = [];
+
+      function refreshData() {
+        google.script.run.withSuccessHandler(renderList).getState();
+      }
+
+      function renderList(state) {
+        const today = new Date().toLocaleDateString("en-CA", {
+          timeZone: "Asia/Manila",
+        });
+        document.getElementById("currentDateDisplay").textContent =
+          new Date().toLocaleDateString("en-PH", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          });
+
+        const hour = new Date().getHours();
+        let greeting = "Good Morning";
+        if (hour >= 12 && hour < 17) greeting = "Good Afternoon";
+        if (hour >= 17) greeting = "Good Evening";
+        document.getElementById("greetingText").textContent = greeting;
+
+        const dayServices = state.servicesByDate[today] || [];
+        ALL_DATA = dayServices;
+
+        updateStats(dayServices);
+        drawTable(dayServices);
+      }
+
+      function drawTable(data) {
+        const tbody = document.querySelector("#receptTable tbody");
+        tbody.innerHTML = "";
+
+        data.sort((a, b) => a.start.localeCompare(b.start));
+
+        data.forEach((item) => {
+          const isArrived = item.status.toLowerCase() === "arrived";
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+          <td>${item.start}</td>
+          <td class="vehicle-cell">
+            <span class="plate-badge">${item.plate || item.csNo || "N/A"}</span>
+            <span class="vehicle-model">${item.model}</span>
+          </td>
+          <td>
+            <div class="customer-info">${item.lastName}</div>
+            <div class="customer-contact">${item.contact || "No contact"}</div>
+          </td>
+          <td>
+            <div>${item.type}</div>
+            <div style="font-size:12px; color:#6b7280; font-weight:500;">Advisor: ${item.advisor}</div>
+          </td>
+          <td>
+            ${
+              isArrived
+                ? '<span style="color:#14b8a6; font-weight:500;">Checked In</span>'
+                : `<button class="btn-confirm-arrival" onclick="markArrived('${item.appointment_id}')">Confirm Arrival</button>`
+            }
+          </td>
+        `;
+          tbody.appendChild(row);
+        });
+      }
+
+      function updateStats(data) {
+        const arrived = data.filter(
+          (x) => x.status.toLowerCase() === "arrived",
+        ).length;
+        document.getElementById("count-total").textContent = data.length;
+        document.getElementById("count-arrived").textContent = arrived;
+        document.getElementById("count-pending").textContent =
+          data.length - arrived;
+      }
+
+      function filterList() {
+        const query = document.getElementById("searchBox").value.toLowerCase();
+        const filtered = ALL_DATA.filter(
+          (x) =>
+            (x.plate || "").toLowerCase().includes(query) ||
+            (x.lastName || "").toLowerCase().includes(query) ||
+            (x.csNo || "").toLowerCase().includes(query),
+        );
+        drawTable(filtered);
+      }
+
+      function markArrived(apptId) {
+        google.script.run
+          .withSuccessHandler(() => {
+            showToast();
+            refreshData();
+          })
+          .setAppointmentArrived(apptId);
+      }
+
+      function showToast() {
+        const t = document.getElementById("toast");
+        t.style.display = "block";
+        setTimeout(() => (t.style.display = "none"), 3000);
+      }
+
+      // Initial load
+      refreshData();
+      setInterval(refreshData, 60000); // Autorefresh every minute
+    </script>
+  </body>
+</html>

@@ -10,8 +10,19 @@
 var APP_VERSION = "v2.0143";
 
 function doGet(e) {
-  // Ensure the path matches your file structure (views/Appointmentview)
-  return HtmlService.createTemplateFromFile("views/Appointmentview")
+  var page = e.parameter.page || "appointment";
+  var template;
+
+  if (page === "reception") {
+    template = HtmlService.createTemplateFromFile("views/Receptionview");
+  } else {
+    template = HtmlService.createTemplateFromFile("views/Appointmentview");
+  }
+
+  // Inject the script URL so the UI buttons know how to navigate
+  template.scriptUrl = ScriptApp.getService().getUrl();
+
+  return template
     .evaluate()
     .setTitle("Toyota Service Workflow")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
@@ -45,6 +56,18 @@ function updateAppointmentStatus(payload) {
     return AppointmentService.updateAppointmentStatus(payload, user);
   } catch (e) {
     throw new Error("Update Failed: " + e.message);
+  }
+}
+
+/**
+ * BRIDGE FUNCTION: setAppointmentArrived
+ * Used by ReceptionView to change status to ARRIVED
+ */
+function setAppointmentArrived(apptId) {
+  try {
+    return AppointmentService.updateStatusToArrived(apptId);
+  } catch (e) {
+    throw new Error("Arrival update failed: " + e.message);
   }
 }
 
