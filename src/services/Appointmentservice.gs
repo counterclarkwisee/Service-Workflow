@@ -77,6 +77,9 @@ const AppointmentService = (function () {
       });
     });
 
+    // Fetch dynamic slot capacities from receiving_time_slots DB
+    const receivingSlots = _getReceivingSlots(BRANCH_CODE);
+
     return {
       advisors: _getAdvisors(),
       bays: bays.map(function (b) {
@@ -89,6 +92,7 @@ const AppointmentService = (function () {
       skuModels: skuModels,
       gjCommonJobs: gjCommonJobs,
       sources: sources,
+      receivingSlots: receivingSlots, // Integrated dynamic slots
     };
   }
 
@@ -159,9 +163,9 @@ const AppointmentService = (function () {
     if (rowIndex === -1) throw new Error("Appointment ID not found.");
 
     // 3. Update Category (O), Status (P), and Remarks (T)
-    apptSheet.getRange(rowIndex, 15).setValue(p.category); // Column O
-    apptSheet.getRange(rowIndex, 16).setValue(p.status); // Column P
-    apptSheet.getRange(rowIndex, 20).setValue(p.status_remarks); // Column T
+    apptSheet.getRange(rowIndex, 15).setValue(p.category);
+    apptSheet.getRange(rowIndex, 16).setValue(p.status);
+    apptSheet.getRange(rowIndex, 20).setValue(p.status_remarks);
 
     // 4. Update Confirmations (Cols R & S)
     if (p.n1_conf === "Confirm") {
@@ -176,7 +180,7 @@ const AppointmentService = (function () {
       apptSheet.getRange(rowIndex, 19).setValue(p.h1_conf.toUpperCase());
     }
 
-    // 5. Update Audit Trail (assuming Column W/X)
+    // 5. Update Audit Trail
     apptSheet.getRange(rowIndex, 23).setValue(new Date());
     apptSheet.getRange(rowIndex, 24).setValue(userEmail);
 
@@ -200,7 +204,7 @@ const AppointmentService = (function () {
         date: p.newDate,
         start: newWorkshopStart,
         apptArrival: p.newTime,
-        reschedule_id: p.appointment_id, // Pass current ID as the Trace ID for the new row
+        reschedule_id: p.appointment_id,
       };
       bookAppointment(newP, { email: userEmail });
     }
@@ -259,11 +263,11 @@ const AppointmentService = (function () {
       appointment_date: p.date,
       scheduled_arrival_time: arrivalTime,
       assigned_advisor_name: p.advisor || "",
-      service_category: p.category || "", // Column O
-      status: "booked", // Column P
-      reschedule_id: p.reschedule_id || "", // Column Q
+      service_category: p.category || "",
+      status: "booked",
+      reschedule_id: p.reschedule_id || "",
       source: p.source || "",
-      status_remarks: "", // Column T
+      status_remarks: "",
       assignee_last_name: p.assigneeLast || "",
       assignee_first_name: p.assigneeFirst || "",
       assignee_contact: p.assigneeContact || "",
@@ -328,6 +332,60 @@ const AppointmentService = (function () {
     return filteredAdvisors.map((u) => ({
       name: (u.team_member || "Unknown Advisor").trim(),
     }));
+  }
+
+  /**
+   * NEW: Reads slot capacity from receiving_time_slots sheet
+   * Handles headers at row 2, data from row 3
+   */
+  function _getReceivingSlots(branchCode) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("receiving_time_slots");
+    if (!sheet) return [];
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 3) return [];
+
+    // Row 2 contains headers (col A: RECEIVING TIME, col B: TLB, col C: TLC)
+    const data = sheet
+      .getRange(2, 1, lastRow - 1, sheet.getLastColumn())
+      .getValues();
+    const headers = data[0].map((h) => String(h).toUpperCase().trim());
+
+    const branchColIdx = headers.indexOf(branchCode.toUpperCase());
+    if (branchColIdx === -1) return [];
+
+    const slots = [];
+    // Data starts at row 3 (index 1 of the 'data' array)
+    for (let i = 1; i < data.length; i++) {
+      const rawTime = data[i][0];
+      const capacityRaw = data[i][branchColIdx];
+
+      if (rawTime === "" || capacityRaw === "") continue;
+
+      let capacity = parseInt(capacityRaw, 10);
+      if (isNaN(capacity)) capacity = 0;
+
+      let timeStr = "";
+      if (Object.prototype.toString.call(rawTime) === "[object Date]") {
+        timeStr = Utilities.formatDate(rawTime, "Asia/Manila", "HH:mm");
+      } else {
+        let s = String(rawTime).trim();
+        let match = s.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let h = parseInt(match[1], 10);
+          let m = match[2];
+          let ampm = match[3].toUpperCase();
+          if (ampm === "PM" && h < 12) h += 12;
+          if (ampm === "AM" && h === 12) h = 0;
+          timeStr = h.toString().padStart(2, "0") + ":" + m;
+        } else {
+          timeStr = s;
+        }
+      }
+      slots.push({ time: timeStr, capacity: capacity });
+    }
+    return slots;
   }
 
   return {
