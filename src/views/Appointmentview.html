@@ -1574,6 +1574,7 @@
             let statusHtml = '<div class="status-cell">';
             statusHtml += `<span class="badge b-navy-pill">Booked</span>`;
 
+            // --- WITH OLB BADGE LOGIC ---
             const olbVal = String(svc.olb_no || "").trim();
             if (olbVal !== "") {
               statusHtml += `<span class="badge b-navy-pill">WITH OLB</span>`;
@@ -1722,6 +1723,7 @@
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
 
+          // --- OLB VISIBILITY LOGIC ---
           const olbVal = (existingData.olb_no || "").trim();
           document.getElementById("f_olb_no").value = olbVal;
           document.getElementById("olb_field_container").style.display =
@@ -1772,6 +1774,7 @@
           document.getElementById("n1h_section_wrapper").style.display =
             "block";
 
+          // Clear OLB for Create mode
           document.getElementById("f_olb_no").value = "";
           document.getElementById("olb_field_container").style.display =
             "block";
@@ -1968,7 +1971,7 @@
             selectedConfH1 === "Rescheduled"
               ? val("f_h1_reschedule_time")
               : val("f_n1_reschedule_time");
-          if (!nDate || !nDate) {
+          if (!nDate || !nTime) {
             alert("Please provide New Date and Time.");
             return;
           }

@@ -221,6 +221,7 @@ const AppointmentService = (function () {
 
     const conflict = allServices.find((s) => {
       const sDate = apptDates[s.appointment_id];
+      // VALIDATION: Only conflict if the specific bay is already taken at this time
       return (
         s.current_bay_id === bayId &&
         sDate === date &&
@@ -239,9 +240,31 @@ const AppointmentService = (function () {
   }
 
   function bookAppointment(p, user) {
-    const conflictingBayName = _getConflictingBayName(p.bay, p.date, p.start);
-    if (conflictingBayName) {
-      throw new Error(conflictingBayName + " is already booked for that time.");
+    const activeBays = BayRepo.listActive();
+    let availableBayId = null;
+
+    // Logic: If a bay was explicitly selected (e.g. from Grid), try that first.
+    // Otherwise (e.g. from Table), find any free bay.
+    if (p.bay) {
+      const conflict = _getConflictingBayName(p.bay, p.date, p.start);
+      if (!conflict) availableBayId = p.bay;
+    }
+
+    if (!availableBayId) {
+      for (let i = 0; i < activeBays.length; i++) {
+        const bId = activeBays[i].bay_id;
+        const conflict = _getConflictingBayName(bId, p.date, p.start);
+        if (!conflict) {
+          availableBayId = bId;
+          break;
+        }
+      }
+    }
+
+    if (!availableBayId) {
+      throw new Error(
+        "Booking failed: All bays are fully occupied for " + p.start + ".",
+      );
     }
 
     const now = new Date();
@@ -286,9 +309,9 @@ const AppointmentService = (function () {
       estimated_duration_minutes: p.dur,
       current_duration_minutes: p.dur,
       original_start_time: p.start,
-      original_bay_id: p.bay,
+      original_bay_id: availableBayId,
       current_start_time: p.start,
-      current_bay_id: p.bay,
+      current_bay_id: availableBayId,
       status: "scheduled",
       last_modified_at: now,
       last_modified_by: user.email,
