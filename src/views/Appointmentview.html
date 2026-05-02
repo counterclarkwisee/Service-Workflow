@@ -1020,7 +1020,11 @@
             <div class="section">
               <div class="section-title">📞 Confirmation Status</div>
 
-              <div class="field" style="margin-bottom: 20px">
+              <div
+                class="field"
+                id="olb_field_container"
+                style="margin-bottom: 20px"
+              >
                 <label>OLB Number</label>
                 <input
                   type="text"
@@ -1028,6 +1032,7 @@
                   placeholder="Enter OLB Number"
                 />
               </div>
+
               <div id="n1d_section_wrapper">
                 <div class="field">
                   <label>N-1D Confirmation (1 Day Before)</label>
@@ -1486,18 +1491,21 @@
         let tableHtml = "";
         const receivingSlots = s.receivingSlots || [];
 
-        // LOOP THROUGH EACH TIME SLOT DEFINED IN DB
         receivingSlots.forEach((slotData) => {
-          const slotTime = slotData.time; // e.g. "06:00"
-          const capacity = slotData.capacity; // e.g. 4
-
-          // Get all appointments booked for this specific arrival time
+          const slotTime = slotData.time;
+          const capacity = slotData.capacity;
           const matches = visible.filter((x) => x.start === slotTime);
 
-          // 1. Draw Occupied Rows for this slot
           matches.forEach((svc) => {
             let statusHtml = '<div class="status-cell">';
             statusHtml += `<span class="badge b-navy-pill">Booked</span>`;
+
+            // --- WITH OLB BADGE LOGIC ---
+            const olbVal = String(svc.olb_no || "").trim();
+            if (olbVal !== "") {
+              statusHtml += `<span class="badge b-navy-pill">WITH OLB</span>`;
+            }
+
             const n1d = String(svc.n1d_status || "")
               .trim()
               .toUpperCase();
@@ -1519,7 +1527,6 @@
             tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">Arrival</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${svc.plate}<div class="sub">${svc.model || ""}</div></td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
           });
 
-          // 2. Draw Empty Rows for remaining SA capacity
           const emptyNeeded = Math.max(0, capacity - matches.length);
           for (let i = 0; i < emptyNeeded; i++) {
             tableHtml += `<tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;"><td style="color: #9a9aa0;">${slotTime}</td><td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot</span></td></tr>`;
@@ -1642,8 +1649,11 @@
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
 
-          // POPULATE OLB NO
-          document.getElementById("f_olb_no").value = existingData.olb_no || "";
+          // --- OLB VISIBILITY LOGIC ---
+          const olbVal = (existingData.olb_no || "").trim();
+          document.getElementById("f_olb_no").value = olbVal;
+          document.getElementById("olb_field_container").style.display =
+            olbVal !== "" ? "none" : "block";
 
           const n1dVal = String(existingData.n1d_status || "")
             .trim()
@@ -1689,6 +1699,11 @@
             "block";
           document.getElementById("n1h_section_wrapper").style.display =
             "block";
+
+          document.getElementById("f_olb_no").value = "";
+          document.getElementById("olb_field_container").style.display =
+            "block";
+
           [
             "f_lastName",
             "f_contact",
@@ -1704,7 +1719,6 @@
             "f_advisor",
             "f_start",
             "f_source",
-            "f_olb_no",
           ].forEach((id) => {
             const el = document.getElementById(id);
             if (el.tagName === "SELECT") {
@@ -1813,7 +1827,7 @@
             selectedConfH1 === "Rescheduled"
               ? val("f_h1_reschedule_time")
               : val("f_n1_reschedule_time");
-          if (!nDate || !nTime) {
+          if (!nDate || !nDate) {
             alert("Please provide New Date and Time.");
             return;
           }
@@ -1861,7 +1875,7 @@
           n1_conf: selectedConfN1,
           h1_conf: selectedConfH1,
           reschedule_id: picked.appointment_id,
-          olb_no: val("f_olb_no"), // CAPTURE OLB NO
+          olb_no: val("f_olb_no"),
         };
         const serverFunc =
           mode === "edit" ? "updateAppointmentStatus" : "bookService";
