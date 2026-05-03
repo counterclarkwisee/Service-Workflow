@@ -849,6 +849,14 @@
           background-color: transparent;
         }
       }
+
+      /* --- 2x2 GRID FOR CONFIRMATION BUTTONS --- */
+      .confirmation-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 8px;
+      }
     </style>
   </head>
   <body>
@@ -881,7 +889,6 @@
               <option value="">All</option>
               <option value="scheduled">Scheduled</option>
               <option value="in_service">In Service</option>
-              <option value="awaiting_parts">Awaiting Parts</option>
               <option value="done">Done</option>
             </select>
           </div>
@@ -899,7 +906,7 @@
         </div>
 
         <div class="filters-right">
-          <button class="btn" onclick="refresh()">Refresh</button>
+          <button class="btn primary" onclick="refresh()">Refresh</button>
         </div>
       </div>
 
@@ -1151,7 +1158,7 @@
                       id="n1_confirm"
                       onclick="setConfirmation('n1', 'Confirm')"
                     >
-                      <span class="dot"></span>Confirm
+                      Confirm
                     </button>
                     <button
                       type="button"
@@ -1159,7 +1166,7 @@
                       id="n1_no_response"
                       onclick="setConfirmation('n1', 'No Response')"
                     >
-                      <span class="dot"></span>No Response
+                      No Response
                     </button>
                     <button
                       type="button"
@@ -1167,7 +1174,7 @@
                       id="n1_reschedule"
                       onclick="setConfirmation('n1', 'Rescheduled')"
                     >
-                      <span class="dot"></span>Reschedule
+                      Reschedule
                     </button>
                     <button
                       type="button"
@@ -1175,37 +1182,8 @@
                       id="n1_canceled"
                       onclick="setConfirmation('n1', 'Canceled')"
                     >
-                      <span class="dot"></span>Canceled
+                      Canceled
                     </button>
-                  </div>
-                  <div
-                    id="n1_reason_container"
-                    style="display: none; margin-top: 8px"
-                  >
-                    <input
-                      type="text"
-                      id="f_n1_reason"
-                      placeholder="Type reason (Required for Canceled)*"
-                    />
-                  </div>
-                  <div
-                    id="n1_reschedule_container"
-                    style="display: none; margin-top: 8px"
-                  >
-                    <div class="row2">
-                      <div class="field">
-                        <label>New Date</label
-                        ><input type="date" id="f_n1_reschedule_date" />
-                      </div>
-                      <div class="field">
-                        <label>New Time (Arrival)</label
-                        ><input
-                          type="time"
-                          id="f_n1_reschedule_time"
-                          step="900"
-                        />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1220,7 +1198,7 @@
                       id="h1_confirm"
                       onclick="setConfirmation('h1', 'Confirm')"
                     >
-                      <span class="dot"></span>Confirm
+                      Confirm
                     </button>
                     <button
                       type="button"
@@ -1228,7 +1206,7 @@
                       id="h1_no_response"
                       onclick="setConfirmation('h1', 'No Response')"
                     >
-                      <span class="dot"></span>No Response
+                      No Response
                     </button>
                     <button
                       type="button"
@@ -1236,7 +1214,7 @@
                       id="h1_reschedule"
                       onclick="setConfirmation('h1', 'Rescheduled')"
                     >
-                      <span class="dot"></span>Reschedule
+                      Reschedule
                     </button>
                     <button
                       type="button"
@@ -1244,37 +1222,8 @@
                       id="h1_canceled"
                       onclick="setConfirmation('h1', 'Canceled')"
                     >
-                      <span class="dot"></span>Canceled
+                      Canceled
                     </button>
-                  </div>
-                  <div
-                    id="h1_reason_container"
-                    style="display: none; margin-top: 8px"
-                  >
-                    <input
-                      type="text"
-                      id="f_h1_reason"
-                      placeholder="Type reason (Required for Canceled)*"
-                    />
-                  </div>
-                  <div
-                    id="h1_reschedule_container"
-                    style="display: none; margin-top: 8px"
-                  >
-                    <div class="row2">
-                      <div class="field">
-                        <label>New Date</label
-                        ><input type="date" id="f_h1_reschedule_date" />
-                      </div>
-                      <div class="field">
-                        <label>New Time (Arrival)</label
-                        ><input
-                          type="time"
-                          id="f_h1_reschedule_time"
-                          step="900"
-                        />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1349,7 +1298,6 @@
         const selectedDate = currentDate();
         const apptTimeRaw = document.getElementById("f_apptTime").value;
         const apptTimeNorm = normalizeTimeTo24h(apptTimeRaw);
-
         const dayServices = STATE.servicesByDate[selectedDate] || [];
         const targetTimeNorm = normalizeTimeTo24h(targetWorkshopTime);
 
@@ -1383,7 +1331,6 @@
 
         (STATE.advisors || []).forEach((adv) => {
           if (!isTimeInShift(apptTimeNorm, adv.shift)) return;
-
           const advName = adv.name.trim();
           const isBusy = busyAdvisors.includes(advName);
           const opt = document.createElement("option");
@@ -1421,7 +1368,6 @@
 
       const nameInput = document.getElementById("f_lastName");
       const resultsDiv = document.getElementById("customerResults");
-
       nameInput.addEventListener("input", function () {
         const val = this.value.toUpperCase();
         resultsDiv.innerHTML = "";
@@ -1989,11 +1935,13 @@
 
       function closeSAModal() {
         document.getElementById("saModal").classList.remove("show");
-        // --- RESTORE JUMP BAR ---
+        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
-        if (jb && (window.view === "table" || window.view === "both"))
+        if (jb && (window.view === "table" || window.view === "both")) {
           jb.style.display = "flex";
+        }
       }
+
       function adjustSASlot(index, delta) {
         const valEl = document.getElementById(`sa_val_${index}`);
         let current = parseInt(valEl.textContent);
@@ -2039,20 +1987,6 @@
         if (cleanId === "rescheduled") cleanId = "reschedule";
         const targetBtn = document.getElementById(`${type}_${cleanId}`);
         if (targetBtn) targetBtn.classList.add("on");
-        const rCont = document.getElementById(`${type}_reason_container`),
-          rsCont = document.getElementById(`${type}_reschedule_container`);
-        if (value === "Rescheduled") {
-          rCont.style.display = "block";
-          rsCont.style.display = "block";
-        } else if (value === "Canceled") {
-          rCont.style.display = "block";
-          rsCont.style.display = "none";
-        } else {
-          rCont.style.display = "none";
-          rsCont.style.display = "none";
-        }
-        if (type === "n1") selectedConfN1 = value;
-        if (type === "h1") selectedConfH1 = value;
       }
 
       function resetConfirmations() {
@@ -2060,10 +1994,6 @@
           ["confirm", "no_response", "reschedule", "canceled"].forEach((b) =>
             document.getElementById(`${t}_${b}`).classList.remove("on"),
           );
-          document.getElementById(`${t}_reason_container`).style.display =
-            "none";
-          document.getElementById(`${t}_reschedule_container`).style.display =
-            "none";
         });
         selectedConfN1 = "";
         selectedConfH1 = "";
@@ -2071,11 +2001,13 @@
 
       function closeModal() {
         document.getElementById("modal").classList.remove("show");
-        // --- RESTORE JUMP BAR ---
+        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
-        if (jb && (window.view === "table" || window.view === "both"))
+        if (jb && (window.view === "table" || window.view === "both")) {
           jb.style.display = "flex";
+        }
       }
+
       function val(id) {
         return document.getElementById(id).value;
       }
@@ -2087,30 +2019,9 @@
           ? "edit"
           : "create";
         const confStatus = selectedConfH1 || selectedConfN1;
-        const currentReason = val("f_h1_reason") || val("f_n1_reason");
         let finalStatus = picked.status || "booked";
         if (confStatus === "Rescheduled" || confStatus === "Canceled") {
           finalStatus = confStatus;
-        }
-        if (confStatus === "Canceled" && !currentReason) {
-          alert("Please enter a reason.");
-          return;
-        }
-        let nDate = "",
-          nTime = "";
-        if (confStatus === "Rescheduled") {
-          nDate =
-            selectedConfH1 === "Rescheduled"
-              ? val("f_h1_reschedule_date")
-              : val("f_n1_reschedule_date");
-          nTime =
-            selectedConfH1 === "Rescheduled"
-              ? val("f_h1_reschedule_time")
-              : val("f_n1_reschedule_time");
-          if (!nDate || !nTime) {
-            alert("Please provide New Date and Time.");
-            return;
-          }
         }
         if (
           mode === "create" &&
@@ -2148,9 +2059,9 @@
           assigneeContact: val("f_assContact"),
           remarks: val("f_remarks"),
           status: finalStatus,
-          status_remarks: currentReason || "",
-          newDate: nDate,
-          newTime: nTime,
+          status_remarks: "",
+          newDate: "",
+          newTime: "",
           category: val("f_category"),
           n1_conf: selectedConfN1,
           h1_conf: selectedConfH1,
