@@ -82,6 +82,7 @@ const AppointmentService = (function () {
     const receivingSlots = _getReceivingSlots(BRANCH_CODE);
 
     return {
+      branchCode: BRANCH_CODE, // Added to support dynamic UI start times
       advisors: _getAdvisors(),
       bays: bays.map(function (b) {
         return { id: b.bay_id, name: b.bay_name, type: b.bay_type };

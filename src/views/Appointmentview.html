@@ -1586,19 +1586,16 @@
               .join("");
         }
 
-        // Advisor dropdown
         document.getElementById("f_advisor").innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
-
-        // Categories
         document.getElementById("f_category").innerHTML =
           '<option value="">— Select Category —</option>' +
           (s.serviceCategories || [])
             .map((cat) => `<option value="${cat}">${cat}</option>`)
             .join("");
 
-        // --- FIXED: POPULATE SOURCE ---
+        // Populate Source
         const sourceSelect = document.getElementById("f_source");
         if (s.sources && s.sources.length > 0) {
           sourceSelect.innerHTML =
@@ -1666,27 +1663,19 @@
 
         const isToday = d === today;
         const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-        const GRID_SLOTS = [
-          "08:00",
-          "08:30",
-          "09:00",
-          "09:30",
-          "10:00",
-          "10:30",
-          "11:00",
-          "11:30",
-          "12:00",
-          "12:30",
-          "13:00",
-          "13:30",
-          "14:00",
-          "14:30",
-          "15:00",
-          "15:30",
-          "16:00",
-          "16:30",
-          "17:00",
-        ];
+
+        // --- DYNAMIC GRID SLOTS BASED ON BRANCH ---
+        let startHour = 8;
+        if (s.branchCode === "TLB") startHour = 6;
+        else if (s.branchCode === "TLC") startHour = 7;
+
+        const GRID_SLOTS = [];
+        for (let h = startHour; h <= 17; h++) {
+          const hh = h.toString().padStart(2, "0");
+          GRID_SLOTS.push(`${hh}:00`);
+          if (h < 17) GRID_SLOTS.push(`${hh}:30`);
+        }
+
         let gh =
           '<table class="gtbl"><thead><tr><th class="bay">Bay</th>' +
           GRID_SLOTS.map(
