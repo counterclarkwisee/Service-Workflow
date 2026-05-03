@@ -1821,6 +1821,10 @@
             n1dVal === "CONFIRMED" ? "none" : "block";
           document.getElementById("n1h_section_wrapper").style.display =
             n1hVal === "CONFIRMED" ? "none" : "block";
+
+          // --- ENSURE NO CONFIRMATION BUTTON IS CLICKED BY DEFAULT ---
+          resetConfirmations();
+
           currentDuration = existingData.dur || 60;
           adjustDuration(0);
           const lockIds = [
@@ -1875,26 +1879,28 @@
             "f_source",
           ].forEach((id) => {
             const el = document.getElementById(id);
-            if (el.tagName === "SELECT") {
-              if (id === "f_category") {
-                el.innerHTML =
-                  '<option value="">— Select Category —</option>' +
-                  (STATE.serviceCategories || [])
-                    .map((cat) => `<option value="${cat}">${cat}</option>`)
-                    .join("");
-              } else if (id === "f_source") {
-                el.innerHTML =
-                  '<option value="">— Select Source —</option>' +
-                  (STATE.sources || [])
-                    .map((s) => `<option value="${s}">${s}</option>`)
-                    .join("");
+            if (el) {
+              if (el.tagName === "SELECT") {
+                if (id === "f_category") {
+                  el.innerHTML =
+                    '<option value="">— Select Category —</option>' +
+                    (STATE.serviceCategories || [])
+                      .map((cat) => `<option value="${cat}">${cat}</option>`)
+                      .join("");
+                } else if (id === "f_source") {
+                  el.innerHTML =
+                    '<option value="">— Select Source —</option>' +
+                    (STATE.sources || [])
+                      .map((s) => `<option value="${s}">${s}</option>`)
+                      .join("");
+                } else {
+                  el.innerHTML = '<option value="">— Select —</option>';
+                }
+                el.disabled = false;
               } else {
-                el.innerHTML = '<option value="">— Select —</option>';
+                el.value = "";
+                el.removeAttribute("readonly");
               }
-              el.disabled = false;
-            } else {
-              el.value = "";
-              el.removeAttribute("readonly");
             }
           });
           document.getElementById("f_apptTime").value = start;
@@ -1937,11 +1943,9 @@
         document.getElementById("saModal").classList.remove("show");
         // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
-        if (jb && (window.view === "table" || window.view === "both")) {
+        if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
-        }
       }
-
       function adjustSASlot(index, delta) {
         const valEl = document.getElementById(`sa_val_${index}`);
         let current = parseInt(valEl.textContent);
@@ -1987,6 +1991,9 @@
         if (cleanId === "rescheduled") cleanId = "reschedule";
         const targetBtn = document.getElementById(`${type}_${cleanId}`);
         if (targetBtn) targetBtn.classList.add("on");
+
+        if (type === "n1") selectedConfN1 = value;
+        if (type === "h1") selectedConfH1 = value;
       }
 
       function resetConfirmations() {
@@ -2003,11 +2010,9 @@
         document.getElementById("modal").classList.remove("show");
         // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
-        if (jb && (window.view === "table" || window.view === "both")) {
+        if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
-        }
       }
-
       function val(id) {
         return document.getElementById(id).value;
       }
@@ -2094,7 +2099,6 @@
         if (e.target.id === "modal") closeModal();
         if (e.target.id === "saModal") closeSAModal();
       });
-
       updateDateChip();
       refresh();
       loadCustomerBase();
