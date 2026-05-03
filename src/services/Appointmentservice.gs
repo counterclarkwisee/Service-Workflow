@@ -403,10 +403,10 @@ const AppointmentService = (function () {
 
       return advisorsFromBreaktime.map((u) => ({
         name: String(u.team_member || "Unknown Advisor").trim(),
-        shift: u.shift, // CRITICAL: Now passing the shift string "6:00 - 15:00"
+        shift: u.shift,
         breaks: {
           am: u.am_break,
-          lunch: u.lunch,
+          lunch: u.lunch_break, // Matched to new BreaktimeRepo key
           pm: u.pm_break,
         },
       }));
