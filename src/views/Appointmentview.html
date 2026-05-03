@@ -1586,21 +1586,31 @@
               .join("");
         }
 
-        // Initial setup for default advisor dropdown, will be filtered upon Appt Time selection
+        // Advisor dropdown
         document.getElementById("f_advisor").innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
 
+        // Categories
         document.getElementById("f_category").innerHTML =
           '<option value="">— Select Category —</option>' +
           (s.serviceCategories || [])
             .map((cat) => `<option value="${cat}">${cat}</option>`)
             .join("");
-        document.getElementById("f_source").innerHTML =
-          '<option value="">— Select Source —</option>' +
-          (s.sources || [])
-            .map((src) => `<option value="${src}">${src}</option>`)
-            .join("");
+
+        // --- FIXED: POPULATE SOURCE ---
+        const sourceSelect = document.getElementById("f_source");
+        if (s.sources && s.sources.length > 0) {
+          sourceSelect.innerHTML =
+            '<option value="">— Select Source —</option>' +
+            s.sources
+              .map((src) => `<option value="${src}">${src}</option>`)
+              .join("");
+        } else {
+          sourceSelect.innerHTML =
+            '<option value="">— Select Source —</option>';
+        }
+
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
 
@@ -1839,6 +1849,12 @@
                   '<option value="">— Select Category —</option>' +
                   (STATE.serviceCategories || [])
                     .map((cat) => `<option value="${cat}">${cat}</option>`)
+                    .join("");
+              } else if (id === "f_source") {
+                el.innerHTML =
+                  '<option value="">— Select Source —</option>' +
+                  (STATE.sources || [])
+                    .map((s) => `<option value="${s}">${s}</option>`)
                     .join("");
               } else {
                 el.innerHTML = '<option value="">— Select —</option>';
