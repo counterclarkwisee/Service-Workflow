@@ -206,6 +206,7 @@ const AppointmentService = (function () {
         apptArrival: p.newTime,
         reschedule_id: p.appointment_id,
       };
+      // FIXED: Inside an IIFE, call internal function correctly
       bookAppointment(newP, { email: userEmail });
     }
 
@@ -391,16 +392,26 @@ const AppointmentService = (function () {
   }
 
   function _getAdvisors() {
-    const allAdvisors = UserRepo.findByPosition("Service Advisor");
-    const filteredAdvisors = allAdvisors.filter(function (u) {
-      const dealerVal = String(u.dealer || "")
-        .trim()
-        .toUpperCase();
-      return dealerVal === BRANCH_CODE.toUpperCase();
-    });
-    return filteredAdvisors.map((u) => ({
-      name: (u.team_member || "Unknown Advisor").trim(),
-    }));
+    try {
+      const advisorsFromBreaktime = BreaktimeRepo.findByPositionAndDealer(
+        "Service Advisor",
+        BRANCH_CODE,
+      );
+
+      if (!advisorsFromBreaktime) return [];
+
+      return advisorsFromBreaktime.map((u) => ({
+        name: String(u.team_member || "Unknown Advisor").trim(),
+        breaks: {
+          am: u.am_break,
+          lunch: u.lunch,
+          pm: u.pm_break,
+        },
+      }));
+    } catch (e) {
+      console.error("Error fetching advisors from breaktime: " + e.message);
+      return [];
+    }
   }
 
   function _getReceivingSlots(branchCode) {
@@ -456,6 +467,6 @@ const AppointmentService = (function () {
     bookAppointment: bookAppointment,
     getRequiredRepairTime: getRequiredRepairTime,
     updateAppointmentStatus: updateAppointmentStatus,
-    updateSlotCapacities: updateSlotCapacities, // Exposed for Code.gs call
+    updateSlotCapacities: updateSlotCapacities,
   };
 })();

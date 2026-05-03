@@ -624,12 +624,14 @@
                 ? "conf-nr"
                 : "";
 
-          // LOCK LOGIC: Disable click if CONFIRMED
+          // LOCK LOGIC: Disable click if already CONFIRMED
           const isHLocked = n1h === "CONFIRMED";
           const hClick = isHLocked
             ? ""
             : `onclick="openHModal('${item.appointment_id}')"`;
-          const hCursor = isHLocked ? "cursor: default;" : "cursor: pointer;";
+          const hCursor = isHLocked
+            ? "cursor: default; opacity: 0.85;"
+            : "cursor: pointer;";
 
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -692,9 +694,22 @@
           alert("Please select a status");
           return;
         }
+
         const btn = document.getElementById("saveBtn");
         btn.disabled = true;
-        btn.textContent = "Saving...";
+        btn.textContent = "Processing...";
+
+        const nDate = document.getElementById("f_h1_reschedule_date").value;
+        const nTime = document.getElementById("f_h1_reschedule_time").value;
+
+        if (selectedConfH1 === "Rescheduled" && (!nDate || !nTime)) {
+          alert("Please provide New Date and Time for rescheduling.");
+          btn.disabled = false;
+          btn.textContent = "Save Changes";
+          return;
+        }
+
+        // package the FULL payload. The backend needs customer info to create the NEW row.
         const payload = {
           appointment_id: currentApptId,
           status:
@@ -704,15 +719,33 @@
           h1_conf: selectedConfH1,
           status_remarks: document.getElementById("f_h1_reason").value,
           remarks: document.getElementById("f_remarks").value,
-          newDate: document.getElementById("f_h1_reschedule_date").value,
-          newTime: document.getElementById("f_h1_reschedule_time").value,
+          newDate: nDate,
+          newTime: nTime,
+
+          // Data Inheritance for Rescheduling row creation
+          lastName: currentDataRow.lastName,
+          contact: currentDataRow.contact,
+          plate: currentDataRow.plate,
+          csNo: currentDataRow.csNo,
+          model: currentDataRow.model,
+          year: currentDataRow.year,
+          type: currentDataRow.type,
+          advisor: currentDataRow.advisor,
           category: currentDataRow.service_category,
+          bay: currentDataRow.bay,
+          dur: currentDataRow.dur,
         };
+
         google.script.run
           .withSuccessHandler(() => {
             closeModal();
             refreshData();
             showToast("Status updated");
+            btn.disabled = false;
+            btn.textContent = "Save Changes";
+          })
+          .withFailureHandler((err) => {
+            alert("Error: " + err.message);
             btn.disabled = false;
             btn.textContent = "Save Changes";
           })
