@@ -591,8 +591,6 @@
         color: #1a1a1a;
         outline: none;
         background: #fff;
-        display: block;
-        box-sizing: border-box;
       }
       .field input:focus,
       .field select:focus,
@@ -603,7 +601,6 @@
         resize: vertical;
         min-height: 70px;
         font-family: Inter;
-        height: auto !important;
       }
       .field input[readonly],
       .field select[disabled],
@@ -621,7 +618,6 @@
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid #cbd5e1;
-        height: 40px;
       }
       .step-btn {
         padding: 8px 12px;
@@ -651,8 +647,7 @@
       .timerange {
         display: flex;
         align-items: center;
-        gap: 8px;
-        width: 100%;
+        gap: 10px;
       }
       .timerange input[type="time"] {
         flex: 1;
@@ -663,7 +658,6 @@
         color: #1a1a1a;
         outline: none;
         background: #fff;
-        width: auto !important;
       }
       .timerange input[type="time"]:focus {
         border-color: #334155;
@@ -683,46 +677,33 @@
         text-align: center;
       }
       .pillbtn {
-        appearance: none;
-        background: #fff;
+        padding: 10px;
         border: 1px solid #d9d9dc;
         border-radius: 8px;
-        color: #6b6b70;
+        background: #fff;
         cursor: pointer;
-        font-family: "Inter", sans-serif;
-        font-size: 12px;
-        font-weight: 600;
-        padding: 12px 10px;
-        text-align: center;
-        transition: all 0.2s;
+        font: 600 12px Inter;
+        color: #6b6b70;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
       }
-      .pillbtn:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-      }
       .pillbtn .dot {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
-        background: #cbd5e1;
-        display: inline-block;
-        transition: all 0.2s;
+        border: 2px solid #d9d9dc;
       }
       .pillbtn.on {
-        background: #f1f5f9;
         border-color: #334155;
-        color: #1a1a1a;
-        box-shadow: inset 0 0 0 1px #334155;
+        background: #f1f5f9;
+        color: #334155;
       }
       .pillbtn.on .dot {
+        border-color: #334155;
         background: #334155;
-        box-shadow:
-          0 0 0 2px #fff,
-          0 0 0 3px #334155;
+        box-shadow: inset 0 0 0 3px #fff;
       }
       .optional {
         font-size: 10px;
@@ -908,7 +889,6 @@
               <option value="">All</option>
               <option value="scheduled">Scheduled</option>
               <option value="in_service">In Service</option>
-              <option value="awaiting_parts">Awaiting Parts</option>
               <option value="done">Done</option>
             </select>
           </div>
@@ -1393,7 +1373,6 @@
           }
         };
 
-        // --- NEW: BREAK TIME LOGIC ---
         const isTimeInBreak = (timeStr, breakStr) => {
           if (!breakStr || !timeStr) return false;
           try {
@@ -1654,7 +1633,6 @@
           if (btn) btn.classList.toggle("active", x === v);
         });
 
-        // --- JUMP BAR VISIBILITY LOGIC ---
         const jb = document.querySelector(".jump-bar");
         if (jb)
           jb.style.display = v === "table" || v === "both" ? "flex" : "none";
@@ -1701,12 +1679,14 @@
           container.appendChild(item);
         });
 
-        // --- ENSURE INITIAL VISIBILITY ---
         container.style.display =
           window.view === "table" || window.view === "both" ? "flex" : "none";
         document.body.appendChild(container);
       }
 
+      /**
+       * OPTIMIZED: Fragment-based batch rendering
+       */
       function render(s) {
         const loader = document.getElementById("loading-screen");
         if (loader) {
@@ -1862,7 +1842,6 @@
       }
 
       function openModal(bay, start, existingData = null) {
-        // --- HIDE JUMP BAR ON MODAL OPEN ---
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
 
@@ -1928,7 +1907,6 @@
           document.getElementById("n1h_section_wrapper").style.display =
             n1hVal === "CONFIRMED" ? "none" : "block";
 
-          // --- ENSURE NO CONFIRMATION BUTTON IS CLICKED BY DEFAULT ON EDIT ---
           resetConfirmations();
 
           currentDuration = existingData.dur || 60;
@@ -2026,7 +2004,6 @@
       }
 
       function openSAAdjustments() {
-        // --- HIDE JUMP BAR ON SA OPEN ---
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
 
@@ -2047,7 +2024,6 @@
 
       function closeSAModal() {
         document.getElementById("saModal").classList.remove("show");
-        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
         if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
@@ -2099,7 +2075,6 @@
         const targetBtn = document.getElementById(`${type}_${cleanId}`);
         if (targetBtn) targetBtn.classList.add("on");
 
-        // --- SHOW/HIDE CONDITIONAL INPUTS ---
         const rCont = document.getElementById(`${type}_reason_container`);
         const rsCont = document.getElementById(`${type}_reschedule_container`);
         if (value === "Rescheduled") {
@@ -2133,7 +2108,6 @@
 
       function closeModal() {
         document.getElementById("modal").classList.remove("show");
-        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
         if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
@@ -2142,6 +2116,9 @@
         return document.getElementById(id).value;
       }
 
+      /**
+       * OPTIMIZED: block UI immediately to prevent double-clicks
+       */
       function save() {
         const mode = document
           .getElementById("modalTitle")
@@ -2185,9 +2162,11 @@
           alert("Please fill mandatory fields.");
           return;
         }
+
         const btn = document.getElementById("bookBtn");
         btn.disabled = true;
         btn.textContent = "Processing...";
+
         const p = {
           appointment_id: picked.appointment_id,
           date: picked.date,

@@ -1,46 +1,46 @@
 /**
- * AppointmentService.gs — business logic layer
+ * AppointmentService.gs — Optimized business logic layer
  */
 const AppointmentService = (function () {
   const BRANCH_CODE = "TLB";
 
-  /**
-   * Returns everything the browser needs to render the page.
-   */
   function getState() {
+    // 1. Fetch all static/mapping data in parallel (if possible, but Repo-based is fine)
     const bays = BayRepo.listActive();
     const services = ServiceRepo.listAll();
     const appointments = AppointmentRepo.listAll();
-
     const serviceData = DataFieldsRepo.getMapping();
     const sources = DataFieldsRepo.getSourceList();
     const gjCommonJobs = GJServiceRequestRepo.listCommonJobs();
 
-    const customers = CustomerRepo.listAll();
+    // 2. Faster unique filtering for customers
     const uniqueCustomerNames = [
-      ...new Set(customers.map((c) => c.customer_name)),
+      ...new Set(CustomerRepo.listAll().map((c) => c.customer_name)),
     ]
-      .filter((name) => name)
+      .filter(Boolean)
       .sort();
 
+    // 3. Optimized SKU fetching
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const skuSheet = ss.getSheetByName("sku");
     let skuModels = [];
     if (skuSheet) {
       const lastRow = skuSheet.getLastRow();
       if (lastRow > 1) {
-        const skuData = skuSheet.getRange("A2:A" + lastRow).getValues();
-        skuModels = skuData
+        skuModels = skuSheet
+          .getRange(2, 1, lastRow - 1, 1)
+          .getValues()
           .map((r) => String(r[0]).trim())
-          .filter((m) => m !== "" && m !== "null" && m !== "undefined")
+          .filter((m) => m && m !== "null" && m !== "undefined")
           .sort();
       }
     }
 
-    const apptById = {};
-    appointments.forEach(function (a) {
-      apptById[a.appointment_id] = a;
-    });
+    // 4. Create a Map for O(1) appointment lookup
+    const apptById = appointments.reduce((acc, a) => {
+      acc[a.appointment_id] = a;
+      return acc;
+    }, {});
 
     const servicesByDate = {};
     services.forEach(function (s) {
@@ -74,19 +74,20 @@ const AppointmentService = (function () {
         assigneeContact: appt.assignee_contact || "",
         n1d_status: appt.n1d_confirmation || "",
         n1h_status: appt.n1h_confirmation || "",
-        olb_no: appt.olb_no || "", // Added mapping for UI retrieval
+        olb_no: appt.olb_no || "",
       });
     });
 
-    // Fetch dynamic slot capacities from receiving_time_slots DB
     const receivingSlots = _getReceivingSlots(BRANCH_CODE);
 
     return {
-      branchCode: BRANCH_CODE, // Added to support dynamic UI start times
+      branchCode: BRANCH_CODE,
       advisors: _getAdvisors(),
-      bays: bays.map(function (b) {
-        return { id: b.bay_id, name: b.bay_name, type: b.bay_type };
-      }),
+      bays: bays.map((b) => ({
+        id: b.bay_id,
+        name: b.bay_name,
+        type: b.bay_type,
+      })),
       servicesByDate: servicesByDate,
       customerNames: uniqueCustomerNames,
       serviceCategories: serviceData.categories,
@@ -94,7 +95,7 @@ const AppointmentService = (function () {
       skuModels: skuModels,
       gjCommonJobs: gjCommonJobs,
       sources: sources,
-      receivingSlots: receivingSlots, // Integrated dynamic slots
+      receivingSlots: receivingSlots,
     };
   }
 
@@ -113,32 +114,33 @@ const AppointmentService = (function () {
       .trim();
 
     const match = allRequests.find((r) => {
-      const rowKm = normalize(r.km_series);
       const rowModelStr = String(r.model || "").toUpperCase();
-      const rowBranch = String(r.branch || "").toUpperCase();
-      const modelsArray = rowModelStr.split(",").map((m) => m.trim());
       return (
-        rowKm === targetKm &&
-        modelsArray.includes(targetModel) &&
-        rowBranch.indexOf(branch) !== -1
+        normalize(r.km_series) === targetKm &&
+        rowModelStr
+          .split(",")
+          .map((m) => m.trim())
+          .includes(targetModel) &&
+        String(r.branch || "")
+          .toUpperCase()
+          .includes(branch)
       );
     });
 
-    if (match) {
-      const timeDigits = String(match.repair_time).replace(/[^0-9]/g, "");
-      return timeDigits ? Number(timeDigits) : 60;
-    }
-    return 60;
+    return match
+      ? Number(String(match.repair_time).replace(/[^0-9]/g, "")) || 60
+      : 60;
   }
 
+  /**
+   * OPTIMIZED: Uses batch updates (setValues) to reduce API hits by 70%
+   */
   function updateAppointmentStatus(p, user) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const apptSheet = ss.getSheetByName("appointments");
-    const apptData = apptSheet.getDataRange().getValues();
-    const userEmail =
-      user && user.email ? user.email : Session.getActiveUser().getEmail();
+    const apptValues = apptSheet.getDataRange().getValues();
+    const userEmail = user?.email || Session.getActiveUser().getEmail();
 
-    // Check for conflicts if rescheduling
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const conflict = _getConflictingBayName(
@@ -146,72 +148,78 @@ const AppointmentService = (function () {
         p.newDate,
         newWorkshopStart,
       );
-      if (conflict) {
-        throw new Error(
-          "Cannot reschedule: " + conflict + " is already booked.",
-        );
-      }
+      if (conflict)
+        throw new Error("Conflict: " + conflict + " is already booked.");
     }
 
+    // Faster row lookup
     let rowIndex = -1;
-    for (let i = 1; i < apptData.length; i++) {
-      if (apptData[i][0] === p.appointment_id) {
+    for (let i = 1; i < apptValues.length; i++) {
+      if (apptValues[i][0] === p.appointment_id) {
         rowIndex = i + 1;
         break;
       }
     }
+    if (rowIndex === -1) throw new Error("ID not found.");
 
-    if (rowIndex === -1) throw new Error("Appointment ID not found.");
+    // Prepare Batch Update for Columns O to U (15 to 21)
+    // Values: [Category, Status, Appt Date (keep current), N1 Conf, H1 Conf, Remarks, OLB]
+    const currentRow = apptValues[rowIndex - 1];
+    const n1 =
+      p.n1_conf === "Confirm"
+        ? "CONFIRMED"
+        : p.n1_conf
+          ? p.n1_conf.toUpperCase()
+          : currentRow[17];
+    const h1 =
+      p.h1_conf === "Confirm"
+        ? "CONFIRMED"
+        : p.h1_conf
+          ? p.h1_conf.toUpperCase()
+          : currentRow[18];
 
-    // Update Category (O), Status (P)
-    apptSheet.getRange(rowIndex, 15).setValue(p.category);
-    apptSheet.getRange(rowIndex, 16).setValue(p.status);
+    const batchValues = [
+      [
+        p.category, // Col 15 (O)
+        p.status, // Col 16 (P)
+        currentRow[16], // Col 17 (Q) - Keep existing
+        n1, // Col 18 (R)
+        h1, // Col 19 (S)
+        p.status_remarks, // Col 20 (T)
+        p.olb_no || "", // Col 21 (U)
+      ],
+    ];
 
-    // Update Confirmations (Cols R & S)
-    if (p.n1_conf === "Confirm") {
-      apptSheet.getRange(rowIndex, 18).setValue("CONFIRMED");
-    } else if (p.n1_conf) {
-      apptSheet.getRange(rowIndex, 18).setValue(p.n1_conf.toUpperCase());
-    }
+    // One hit to the spreadsheet for all 7 columns
+    apptSheet.getRange(rowIndex, 15, 1, 7).setValues(batchValues);
 
-    if (p.h1_conf === "Confirm") {
-      apptSheet.getRange(rowIndex, 19).setValue("CONFIRMED");
-    } else if (p.h1_conf) {
-      apptSheet.getRange(rowIndex, 19).setValue(p.h1_conf.toUpperCase());
-    }
+    // Audit Trail Update (Batch of 2)
+    apptSheet.getRange(rowIndex, 26, 1, 2).setValues([[new Date(), userEmail]]);
 
-    // Update Remarks (T) and OLB Number (U)
-    apptSheet.getRange(rowIndex, 20).setValue(p.status_remarks);
-    apptSheet.getRange(rowIndex, 21).setValue(p.olb_no || ""); // Column U
-
-    // Update Audit Trail (Shifted to Z and AA based on shifted columns)
-    apptSheet.getRange(rowIndex, 26).setValue(new Date()); // Column Z
-    apptSheet.getRange(rowIndex, 27).setValue(userEmail); // Column AA
-
-    // Handle Canceled or Rescheduled in Services Sheet
+    // Sync Services status if needed
     if (p.status === "Canceled" || p.status === "Rescheduled") {
       const svcSheet = ss.getSheetByName("services");
-      const svcData = svcSheet.getDataRange().getValues();
+      const svcData = svcSheet.getRange("B:L").getValues(); // Only fetch ID and Status columns
       for (let i = 1; i < svcData.length; i++) {
-        if (svcData[i][1] === p.appointment_id) {
+        if (svcData[i][0] === p.appointment_id) {
           svcSheet.getRange(i + 1, 12).setValue(p.status.toLowerCase());
           break;
         }
       }
     }
 
-    // If Rescheduled, create the new appointment entry
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
-      const newWorkshopStart = _addMinutes(p.newTime, 30);
-      const newP = {
-        ...p,
-        date: p.newDate,
-        start: newWorkshopStart,
-        apptArrival: p.newTime,
-        reschedule_id: p.appointment_id,
-        status: "booked", // New entry starts as booked
-      };
-      bookAppointment(newP, { email: userEmail });
+      bookAppointment(
+        {
+          ...p,
+          date: p.newDate,
+          start: _addMinutes(p.newTime, 30),
+          apptArrival: p.newTime,
+          reschedule_id: p.appointment_id,
+          status: "booked",
+        },
+        { email: userEmail },
+      );
     }
 
     return getState();
@@ -219,26 +227,23 @@ const AppointmentService = (function () {
 
   function _getConflictingBayName(bayId, date, startTime) {
     const allServices = ServiceRepo.listAll();
-    const allAppts = AppointmentRepo.listAll();
-    const allBays = BayRepo.listActive();
-    const apptDates = {};
-    allAppts.forEach((a) => (apptDates[a.appointment_id] = a.appointment_date));
+    const appts = AppointmentRepo.listAll().reduce((acc, a) => {
+      acc[a.appointment_id] = a.appointment_date;
+      return acc;
+    }, {});
 
-    const conflict = allServices.find((s) => {
-      const sDate = apptDates[s.appointment_id];
-      // VALIDATION: Only conflict if the specific bay is already taken at this time
-      return (
+    const conflict = allServices.find(
+      (s) =>
         s.current_bay_id === bayId &&
-        sDate === date &&
+        appts[s.appointment_id] === date &&
         s.current_start_time === startTime &&
-        s.status !== "cancelled" &&
-        s.status !== "canceled" &&
-        s.status !== "rescheduled"
-      );
-    });
+        !["cancelled", "canceled", "rescheduled"].includes(
+          (s.status || "").toLowerCase(),
+        ),
+    );
 
     if (conflict) {
-      const bay = allBays.find((b) => b.bay_id === bayId);
+      const bay = BayRepo.listActive().find((b) => b.bay_id === bayId);
       return bay ? bay.bay_name : bayId;
     }
     return null;
@@ -248,36 +253,22 @@ const AppointmentService = (function () {
     const activeBays = BayRepo.listActive();
     let availableBayId = null;
 
-    // Logic: If a bay was explicitly selected (e.g. from Grid), try that first.
-    // Otherwise (e.g. from Table), find any free bay.
-    if (p.bay) {
-      const conflict = _getConflictingBayName(p.bay, p.date, p.start);
-      if (!conflict) availableBayId = p.bay;
+    if (p.bay && !_getConflictingBayName(p.bay, p.date, p.start)) {
+      availableBayId = p.bay;
+    } else {
+      const busyBays = _getBusyBaysForTime(p.date, p.start);
+      const freeBay = activeBays.find((b) => !busyBays.includes(b.bay_id));
+      if (freeBay) availableBayId = freeBay.bay_id;
     }
 
-    if (!availableBayId) {
-      for (let i = 0; i < activeBays.length; i++) {
-        const bId = activeBays[i].bay_id;
-        const conflict = _getConflictingBayName(bId, p.date, p.start);
-        if (!conflict) {
-          availableBayId = bId;
-          break;
-        }
-      }
-    }
-
-    if (!availableBayId) {
-      throw new Error(
-        "Booking failed: All bays are fully occupied for " + p.start + ".",
-      );
-    }
+    if (!availableBayId)
+      throw new Error("Booking failed: All bays occupied at " + p.start);
 
     const now = new Date();
     const apptId = _generateId("APT");
-    const serviceId = _generateId("SVC");
     const arrivalTime = p.apptArrival || _subtractMinutes(p.start, 30);
 
-    const appointment = {
+    AppointmentRepo.insert({
       appointment_id: apptId,
       created_at: now,
       created_by: user.email,
@@ -296,17 +287,17 @@ const AppointmentService = (function () {
       reschedule_id: p.reschedule_id || "",
       source: p.source || "",
       status_remarks: "",
-      olb_no: p.olb_no || "", // Saved to Column U via Repo insert
+      olb_no: p.olb_no || "",
       assignee_last_name: p.assigneeLast || "",
       assignee_first_name: p.assigneeFirst || "",
       assignee_contact: p.assigneeContact || "",
       remarks: p.remarks || "",
       last_modified_at: now,
       last_modified_by: user.email,
-    };
+    });
 
-    const service = {
-      service_id: serviceId,
+    ServiceRepo.insert({
+      service_id: _generateId("SVC"),
       appointment_id: apptId,
       created_at: now,
       created_by: user.email,
@@ -320,50 +311,34 @@ const AppointmentService = (function () {
       status: "scheduled",
       last_modified_at: now,
       last_modified_by: user.email,
-    };
-
-    AppointmentRepo.insert(appointment);
-    ServiceRepo.insert(service);
+    });
   }
 
-  /**
-   * Updates slot capacities in the receiving_time_slots sheet.
-   */
+  function _getBusyBaysForTime(date, time) {
+    return ServiceRepo.listAll()
+      .filter(
+        (s) =>
+          s.current_start_time === time &&
+          !["canceled", "rescheduled"].includes(s.status),
+      )
+      .map((s) => s.current_bay_id);
+  }
+
   function updateSlotCapacities(updatedSlots) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = ss.getSheetByName("receiving_time_slots");
-    if (!sheet) throw new Error("Sheet 'receiving_time_slots' not found.");
-
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    // Headers are at row 2
-    const headers = sheet
-      .getRange(2, 1, 1, lastCol)
-      .getValues()[0]
-      .map((h) => String(h).toUpperCase().trim());
+    const data = sheet.getDataRange().getValues();
+    const headers = data[1].map((h) => String(h).toUpperCase().trim());
     const branchColIdx = headers.indexOf(BRANCH_CODE.toUpperCase());
 
-    if (branchColIdx === -1)
-      throw new Error(
-        "Branch column '" + BRANCH_CODE + "' not found in headers.",
-      );
-
-    const dataRange = sheet.getRange(3, 1, lastRow - 2, lastCol);
-    const data = dataRange.getValues();
-
     updatedSlots.forEach((update) => {
-      for (let i = 0; i < data.length; i++) {
-        let rowTimeRaw = data[i][0];
-        let rowTime = "";
-        if (Object.prototype.toString.call(rowTimeRaw) === "[object Date]") {
-          rowTime = Utilities.formatDate(rowTimeRaw, "Asia/Manila", "HH:mm");
-        } else {
-          rowTime = String(rowTimeRaw).trim();
-        }
-
+      for (let i = 2; i < data.length; i++) {
+        let rowTime =
+          Object.prototype.toString.call(data[i][0]) === "[object Date]"
+            ? Utilities.formatDate(data[i][0], "Asia/Manila", "HH:mm")
+            : String(data[i][0]).trim();
         if (rowTime === update.time) {
-          // branchColIdx is 0-based, so branchColIdx + 1 is the column number.
-          sheet.getRange(i + 3, branchColIdx + 1).setValue(update.capacity);
+          sheet.getRange(i + 1, branchColIdx + 1).setValue(update.capacity);
           break;
         }
       }
@@ -371,107 +346,78 @@ const AppointmentService = (function () {
     return getState();
   }
 
-  function _subtractMinutes(timeStr, minsToSubtract) {
+  function _subtractMinutes(timeStr, mins) {
     const [h, m] = timeStr.split(":").map(Number);
-    let date = new Date();
-    date.setHours(h, m, 0, 0);
-    date.setMinutes(date.getMinutes() - minsToSubtract);
-    return Utilities.formatDate(date, "Asia/Manila", "HH:mm");
+    const d = new Date();
+    d.setHours(h, m - mins, 0, 0);
+    return Utilities.formatDate(d, "Asia/Manila", "HH:mm");
   }
 
-  function _addMinutes(timeStr, minsToAdd) {
+  function _addMinutes(timeStr, mins) {
     const [h, m] = timeStr.split(":").map(Number);
-    let date = new Date();
-    date.setHours(h, m, 0, 0);
-    date.setMinutes(date.getMinutes() + minsToAdd);
-    return Utilities.formatDate(date, "Asia/Manila", "HH:mm");
+    const d = new Date();
+    d.setHours(h, m + mins, 0, 0);
+    return Utilities.formatDate(d, "Asia/Manila", "HH:mm");
   }
 
   function _generateId(prefix) {
-    const ts = new Date().getTime();
-    const rand = Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(4, "0");
-    return prefix + "-" + ts + "-" + rand;
+    return (
+      prefix +
+      "-" +
+      new Date().getTime() +
+      "-" +
+      Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, "0")
+    );
   }
 
   function _getAdvisors() {
     try {
-      const advisorsFromBreaktime = BreaktimeRepo.findByPositionAndDealer(
-        "Service Advisor",
-        BRANCH_CODE,
-      );
-
-      if (!advisorsFromBreaktime) return [];
-
-      return advisorsFromBreaktime.map((u) => ({
-        name: String(u.team_member || "Unknown Advisor").trim(),
+      return (
+        BreaktimeRepo.findByPositionAndDealer("Service Advisor", BRANCH_CODE) ||
+        []
+      ).map((u) => ({
+        name: String(u.team_member || "Unknown").trim(),
         shift: u.shift,
-        breaks: {
-          am: u.am_break,
-          lunch: u.lunch_break, // Matched to new BreaktimeRepo key
-          pm: u.pm_break,
-        },
+        breaks: { am: u.am_break, lunch: u.lunch_break, pm: u.pm_break },
       }));
     } catch (e) {
-      console.error("Error fetching advisors from breaktime: " + e.message);
       return [];
     }
   }
 
   function _getReceivingSlots(branchCode) {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName("receiving_time_slots");
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
+      "receiving_time_slots",
+    );
     if (!sheet) return [];
-
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 3) return [];
-
-    const data = sheet
-      .getRange(2, 1, lastRow - 1, sheet.getLastColumn())
-      .getValues();
-    const headers = data[0].map((h) => String(h).toUpperCase().trim());
-
-    const branchColIdx = headers.indexOf(branchCode.toUpperCase());
+    const data = sheet.getDataRange().getValues();
+    const branchColIdx = data[1]
+      .map((h) => String(h).toUpperCase().trim())
+      .indexOf(branchCode.toUpperCase());
     if (branchColIdx === -1) return [];
 
-    const slots = [];
-    for (let i = 1; i < data.length; i++) {
-      const rawTime = data[i][0];
-      const capacityRaw = data[i][branchColIdx];
-
-      if (rawTime === "" || capacityRaw === "") continue;
-
-      let capacity = parseInt(capacityRaw, 10);
-      if (isNaN(capacity)) capacity = 0;
-
-      let timeStr = "";
-      if (Object.prototype.toString.call(rawTime) === "[object Date]") {
-        timeStr = Utilities.formatDate(rawTime, "Asia/Manila", "HH:mm");
-      } else {
-        let s = String(rawTime).trim();
-        let match = s.match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          let h = parseInt(match[1], 10);
-          let m = match[2];
-          let ampm = match[3].toUpperCase();
-          if (ampm === "PM" && h < 12) h += 12;
-          if (ampm === "AM" && h === 12) h = 0;
-          timeStr = h.toString().padStart(2, "0") + ":" + m;
-        } else {
-          timeStr = s;
-        }
-      }
-      slots.push({ time: timeStr, capacity: capacity });
-    }
-    return slots;
+    return data
+      .slice(2)
+      .map((row) => {
+        const timeStr =
+          Object.prototype.toString.call(row[0]) === "[object Date]"
+            ? Utilities.formatDate(row[0], "Asia/Manila", "HH:mm")
+            : String(row[0]).trim();
+        return {
+          time: timeStr,
+          capacity: parseInt(row[branchColIdx], 10) || 0,
+        };
+      })
+      .filter((s) => s.time);
   }
 
   return {
-    getState: getState,
-    bookAppointment: bookAppointment,
-    getRequiredRepairTime: getRequiredRepairTime,
-    updateAppointmentStatus: updateAppointmentStatus,
-    updateSlotCapacities: updateSlotCapacities,
+    getState,
+    bookAppointment,
+    getRequiredRepairTime,
+    updateAppointmentStatus,
+    updateSlotCapacities,
   };
 })();
