@@ -1185,6 +1185,35 @@
                       Canceled
                     </button>
                   </div>
+                  <div
+                    id="n1_reason_container"
+                    style="display: none; margin-top: 8px"
+                  >
+                    <input
+                      type="text"
+                      id="f_n1_reason"
+                      placeholder="Type reason (Required for Canceled)*"
+                    />
+                  </div>
+                  <div
+                    id="n1_reschedule_container"
+                    style="display: none; margin-top: 8px"
+                  >
+                    <div class="row2">
+                      <div class="field">
+                        <label>New Date</label
+                        ><input type="date" id="f_n1_reschedule_date" />
+                      </div>
+                      <div class="field">
+                        <label>New Time</label
+                        ><input
+                          type="time"
+                          id="f_n1_reschedule_time"
+                          step="900"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1224,6 +1253,35 @@
                     >
                       Canceled
                     </button>
+                  </div>
+                  <div
+                    id="h1_reason_container"
+                    style="display: none; margin-top: 8px"
+                  >
+                    <input
+                      type="text"
+                      id="f_h1_reason"
+                      placeholder="Type reason (Required for Canceled)*"
+                    />
+                  </div>
+                  <div
+                    id="h1_reschedule_container"
+                    style="display: none; margin-top: 8px"
+                  >
+                    <div class="row2">
+                      <div class="field">
+                        <label>New Date</label
+                        ><input type="date" id="f_h1_reschedule_date" />
+                      </div>
+                      <div class="field">
+                        <label>New Time</label
+                        ><input
+                          type="time"
+                          id="f_h1_reschedule_time"
+                          step="900"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1822,7 +1880,7 @@
           document.getElementById("n1h_section_wrapper").style.display =
             n1hVal === "CONFIRMED" ? "none" : "block";
 
-          // --- ENSURE NO CONFIRMATION BUTTON IS CLICKED BY DEFAULT ---
+          // --- ENSURE NO CONFIRMATION BUTTON IS CLICKED BY DEFAULT ON EDIT ---
           resetConfirmations();
 
           currentDuration = existingData.dur || 60;
@@ -1946,6 +2004,7 @@
         if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
       }
+
       function adjustSASlot(index, delta) {
         const valEl = document.getElementById(`sa_val_${index}`);
         let current = parseInt(valEl.textContent);
@@ -1992,6 +2051,20 @@
         const targetBtn = document.getElementById(`${type}_${cleanId}`);
         if (targetBtn) targetBtn.classList.add("on");
 
+        // --- SHOW/HIDE CONDITIONAL INPUTS ---
+        const rCont = document.getElementById(`${type}_reason_container`);
+        const rsCont = document.getElementById(`${type}_reschedule_container`);
+        if (value === "Rescheduled") {
+          rCont.style.display = "block";
+          rsCont.style.display = "block";
+        } else if (value === "Canceled") {
+          rCont.style.display = "block";
+          rsCont.style.display = "none";
+        } else {
+          rCont.style.display = "none";
+          rsCont.style.display = "none";
+        }
+
         if (type === "n1") selectedConfN1 = value;
         if (type === "h1") selectedConfH1 = value;
       }
@@ -2001,6 +2074,10 @@
           ["confirm", "no_response", "reschedule", "canceled"].forEach((b) =>
             document.getElementById(`${t}_${b}`).classList.remove("on"),
           );
+          document.getElementById(`${t}_reason_container`).style.display =
+            "none";
+          document.getElementById(`${t}_reschedule_container`).style.display =
+            "none";
         });
         selectedConfN1 = "";
         selectedConfH1 = "";
@@ -2024,9 +2101,30 @@
           ? "edit"
           : "create";
         const confStatus = selectedConfH1 || selectedConfN1;
+        const currentReason = val("f_h1_reason") || val("f_n1_reason");
         let finalStatus = picked.status || "booked";
         if (confStatus === "Rescheduled" || confStatus === "Canceled") {
           finalStatus = confStatus;
+        }
+        if (confStatus === "Canceled" && !currentReason) {
+          alert("Please enter a reason.");
+          return;
+        }
+        let nDate = "",
+          nTime = "";
+        if (confStatus === "Rescheduled") {
+          nDate =
+            selectedConfH1 === "Rescheduled"
+              ? val("f_h1_reschedule_date")
+              : val("f_n1_reschedule_date");
+          nTime =
+            selectedConfH1 === "Rescheduled"
+              ? val("f_h1_reschedule_time")
+              : val("f_n1_reschedule_time");
+          if (!nDate || !nTime) {
+            alert("Please provide New Date and Time.");
+            return;
+          }
         }
         if (
           mode === "create" &&
@@ -2064,9 +2162,9 @@
           assigneeContact: val("f_assContact"),
           remarks: val("f_remarks"),
           status: finalStatus,
-          status_remarks: "",
-          newDate: "",
-          newTime: "",
+          status_remarks: currentReason || "",
+          newDate: nDate,
+          newTime: nTime,
           category: val("f_category"),
           n1_conf: selectedConfN1,
           h1_conf: selectedConfH1,
@@ -2099,6 +2197,7 @@
         if (e.target.id === "modal") closeModal();
         if (e.target.id === "saModal") closeSAModal();
       });
+
       updateDateChip();
       refresh();
       loadCustomerBase();

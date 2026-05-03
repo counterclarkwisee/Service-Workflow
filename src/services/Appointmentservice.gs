@@ -138,6 +138,7 @@ const AppointmentService = (function () {
     const userEmail =
       user && user.email ? user.email : Session.getActiveUser().getEmail();
 
+    // Check for conflicts if rescheduling
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const conflict = _getConflictingBayName(
@@ -187,6 +188,7 @@ const AppointmentService = (function () {
     apptSheet.getRange(rowIndex, 26).setValue(new Date()); // Column Z
     apptSheet.getRange(rowIndex, 27).setValue(userEmail); // Column AA
 
+    // Handle Canceled or Rescheduled in Services Sheet
     if (p.status === "Canceled" || p.status === "Rescheduled") {
       const svcSheet = ss.getSheetByName("services");
       const svcData = svcSheet.getDataRange().getValues();
@@ -198,6 +200,7 @@ const AppointmentService = (function () {
       }
     }
 
+    // If Rescheduled, create the new appointment entry
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
       const newP = {
@@ -206,8 +209,8 @@ const AppointmentService = (function () {
         start: newWorkshopStart,
         apptArrival: p.newTime,
         reschedule_id: p.appointment_id,
+        status: "booked", // New entry starts as booked
       };
-      // FIXED: Inside an IIFE, call internal function correctly
       bookAppointment(newP, { email: userEmail });
     }
 
@@ -289,7 +292,7 @@ const AppointmentService = (function () {
       scheduled_arrival_time: arrivalTime,
       assigned_advisor_name: p.advisor || "",
       service_category: p.category || "",
-      status: "booked",
+      status: p.status || "booked",
       reschedule_id: p.reschedule_id || "",
       source: p.source || "",
       status_remarks: "",
