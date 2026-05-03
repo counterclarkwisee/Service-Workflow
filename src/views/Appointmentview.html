@@ -19,11 +19,9 @@
         z-index: 10000;
         transition: opacity 0.5s ease-out;
       }
-
       .loader-container {
         text-align: center;
       }
-
       .loading-project-title {
         font-weight: 400;
         font-size: 11px;
@@ -32,17 +30,15 @@
         margin-bottom: 30px;
         letter-spacing: 1.2px;
       }
-
       .toyota-spinner {
         width: 50px;
         height: 50px;
         border: 3px solid #f4f4f6;
         border-radius: 50%;
-        border-top-color: #eb0a1e; /* Toyota Red */
+        border-top-color: #eb0a1e;
         animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
         margin: 0 auto 20px;
       }
-
       @keyframes spin {
         0% {
           transform: rotate(0deg);
@@ -51,7 +47,6 @@
           transform: rotate(360deg);
         }
       }
-
       .loading-brand {
         font-weight: 700;
         font-size: 16px;
@@ -60,14 +55,12 @@
         text-transform: uppercase;
         margin-bottom: 5px;
       }
-
       .loading-subtext {
         color: #6b6b70;
         font-size: 12px;
         font-weight: 400;
       }
 
-      /* Styles preserved from stable version */
       * {
         box-sizing: border-box;
       }
@@ -680,13 +673,6 @@
         min-width: 54px;
         text-align: center;
       }
-      .confirmation-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        position: relative;
-        z-index: 10;
-      }
       .pillbtn {
         padding: 10px;
         border: 1px solid #d9d9dc;
@@ -699,7 +685,6 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
-        pointer-events: auto !important;
       }
       .pillbtn .dot {
         width: 12px;
@@ -787,8 +772,6 @@
         font-size: 11px;
         color: #6b6b70;
       }
-
-      /* --- SA ADJUSTMENTS STEPPER STYLES --- */
       .sa-stepper-row {
         display: flex;
         align-items: center;
@@ -1096,7 +1079,6 @@
           <div id="confirmationSection" style="display: none">
             <div class="section">
               <div class="section-title">📞 Confirmation Status</div>
-
               <div
                 class="field"
                 id="olb_field_container"
@@ -1306,12 +1288,78 @@
         updateEndTimeFromStart();
       }
 
+      function normalizeTimeTo24h(t) {
+        if (!t) return "";
+        let [h, m] = t.split(":").map(Number);
+        return (
+          h.toString().padStart(2, "0") + ":" + m.toString().padStart(2, "0")
+        );
+      }
+
+      function refreshAdvisorDropdown(targetWorkshopTime) {
+        const selectedDate = currentDate();
+        const apptTimeRaw = document.getElementById("f_apptTime").value;
+        const apptTimeNorm = normalizeTimeTo24h(apptTimeRaw);
+
+        const dayServices = STATE.servicesByDate[selectedDate] || [];
+        const targetTimeNorm = normalizeTimeTo24h(targetWorkshopTime);
+
+        const isTimeInShift = (timeStr, shiftStr) => {
+          if (!shiftStr || !timeStr) return false;
+          try {
+            const parts = shiftStr
+              .split("-")
+              .map((p) => normalizeTimeTo24h(p.trim()));
+            if (parts.length !== 2) return true;
+            return timeStr >= parts[0] && timeStr <= parts[1];
+          } catch (e) {
+            return true;
+          }
+        };
+
+        const busyAdvisors = dayServices
+          .filter((svc) => {
+            const svcTime = normalizeTimeTo24h(svc.gridStart);
+            const isActive = !["canceled", "cancelled", "rescheduled"].includes(
+              (svc.status || "").toLowerCase(),
+            );
+            return svcTime === targetTimeNorm && isActive;
+          })
+          .map((svc) => (svc.advisor || "").trim());
+
+        const advisorSelect = document.getElementById("f_advisor");
+        const currentSelection = advisorSelect.value;
+        advisorSelect.innerHTML =
+          '<option value="">— Select advisor —</option>';
+
+        (STATE.advisors || []).forEach((adv) => {
+          if (!isTimeInShift(apptTimeNorm, adv.shift)) return;
+
+          const advName = adv.name.trim();
+          const isBusy = busyAdvisors.includes(advName);
+          const opt = document.createElement("option");
+          opt.value = advName;
+          if (isBusy) {
+            opt.textContent = advName + " (BUSY)";
+            opt.disabled = true;
+            opt.style.backgroundColor = "#fff1f2";
+            opt.style.color = "#e11d48";
+          } else {
+            opt.textContent = advName;
+          }
+          advisorSelect.appendChild(opt);
+        });
+        if (currentSelection) advisorSelect.value = currentSelection;
+      }
+
       function syncWorkshopFromAppt() {
         const apptVal = document.getElementById("f_apptTime").value;
         if (!apptVal) return;
         const workshopStartMins = toMin(apptVal) + 30;
-        document.getElementById("f_start").value = fromMin(workshopStartMins);
+        const workshopTime = fromMin(workshopStartMins);
+        document.getElementById("f_start").value = workshopTime;
         updateEndTimeFromStart();
+        refreshAdvisorDropdown(workshopTime);
       }
 
       function loadCustomerBase() {
@@ -1500,7 +1548,6 @@
           v === "grid" ? "none" : "flex";
         document.getElementById("gridPane").style.display =
           v === "table" ? "none" : "flex";
-
         ["table", "both", "grid"].forEach((x) => {
           const btn = document.getElementById("v_" + x);
           if (btn) btn.classList.toggle("active", x === v);
@@ -1510,16 +1557,6 @@
         if (!t) return 0;
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
-      }
-      function statusLabel(s) {
-        return (
-          {
-            scheduled: "Scheduled",
-            in_service: "In Service",
-            awaiting_parts: "Awaiting Parts",
-            done: "Done",
-          }[s] || s
-        );
       }
 
       function openExistingModal(apptId, bay, start) {
@@ -1537,7 +1574,6 @@
           loader.style.opacity = "0";
           setTimeout(() => loader.remove(), 500);
         }
-
         if (document.getElementById("modal").classList.contains("show")) return;
         STATE = s;
         if (s.skuModels) {
@@ -1549,9 +1585,12 @@
               .map((m) => `<option value="${m}">${m}</option>`)
               .join("");
         }
+
+        // Initial setup for default advisor dropdown, will be filtered upon Appt Time selection
         document.getElementById("f_advisor").innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
+
         document.getElementById("f_category").innerHTML =
           '<option value="">— Select Category —</option>' +
           (s.serviceCategories || [])
@@ -1576,21 +1615,17 @@
 
         let tableHtml = "";
         const receivingSlots = s.receivingSlots || [];
-
         receivingSlots.forEach((slotData) => {
           const slotTime = slotData.time;
           const capacity = slotData.capacity;
           const matches = visible.filter((x) => x.start === slotTime);
-
           matches.forEach((svc) => {
-            let statusHtml = '<div class="status-cell">';
-            statusHtml += `<span class="badge b-navy-pill">Booked</span>`;
-
+            let statusHtml =
+              '<div class="status-cell"><span class="badge b-navy-pill">Booked</span>';
             const olbVal = String(svc.olb_no || "").trim();
             if (olbVal !== "") {
               statusHtml += `<span class="badge b-navy-pill">WITH OLB</span>`;
             }
-
             const n1d = String(svc.n1d_status || "")
               .trim()
               .toUpperCase();
@@ -1608,10 +1643,8 @@
               statusHtml += `<span class="badge b-no-response-pill">N-1H: NR</span>`;
             }
             statusHtml += "</div>";
-
             tableHtml += `<tr class="occupied-row" style="background-color: #fdf2f2;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #eb0a1e;"><strong>${svc.start}</strong><div class="sub">Arrival</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${svc.plate}<div class="sub">${svc.model || ""}</div></td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
           });
-
           const emptyNeeded = Math.max(0, capacity - matches.length);
           for (let i = 0; i < emptyNeeded; i++) {
             tableHtml += `<tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;"><td style="color: #9a9aa0;">${slotTime}</td><td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot</span></td></tr>`;
@@ -1644,7 +1677,6 @@
           "16:30",
           "17:00",
         ];
-
         let gh =
           '<table class="gtbl"><thead><tr><th class="bay">Bay</th>' +
           GRID_SLOTS.map(
@@ -1659,8 +1691,8 @@
             const slot = GRID_SLOTS[i],
               svc = visible.find((x) => x.bay === b.id && x.gridStart === slot);
             if (svc) {
-              const span = Math.max(1, Math.round(svc.dur / 30));
-              const name = svc.lastName,
+              const span = Math.max(1, Math.round(svc.dur / 30)),
+                name = svc.lastName,
                 catColor = getCategoryColor(svc.service_category);
               gh += `<td colspan="${span}"><div class="block s-scheduled" style="border-left-color: ${catColor}; background-color: ${catColor}15;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><div class="name" style="color: ${catColor};">${name}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
               i += span;
@@ -1733,13 +1765,10 @@
             existingData.assigneeFirst || "";
           document.getElementById("f_assContact").value =
             existingData.assigneeContact || "";
-
-          // --- OLB VISIBILITY LOGIC ---
           const olbVal = (existingData.olb_no || "").trim();
           document.getElementById("f_olb_no").value = olbVal;
           document.getElementById("olb_field_container").style.display =
             olbVal !== "" ? "none" : "block";
-
           const n1dVal = String(existingData.n1d_status || "")
             .trim()
             .toUpperCase();
@@ -1784,11 +1813,9 @@
             "block";
           document.getElementById("n1h_section_wrapper").style.display =
             "block";
-
           document.getElementById("f_olb_no").value = "";
           document.getElementById("olb_field_container").style.display =
             "block";
-
           [
             "f_lastName",
             "f_contact",
@@ -1828,7 +1855,6 @@
           adjustDuration(0);
           syncWorkshopFromAppt();
           resetConfirmations();
-          render(STATE);
           document.getElementById("dur_minus").style.pointerEvents = "auto";
           document.getElementById("dur_plus").style.pointerEvents = "auto";
         }
@@ -1839,37 +1865,25 @@
           }, 300);
       }
 
-      // Open the new SA Modal
       function openSAAdjustments() {
         const container = document.getElementById("sa_stepper_container");
         container.innerHTML = "";
-
         if (!STATE || !STATE.receivingSlots) {
           showToast("Error: No slot data found", "error");
           return;
         }
-
         STATE.receivingSlots.forEach((slot, index) => {
           const row = document.createElement("div");
           row.className = "sa-stepper-row";
-          row.innerHTML = `
-            <div class="sa-time">${slot.time}</div>
-            <div class="sa-controls">
-              <button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, -1)">−</button>
-              <div class="sa-val" id="sa_val_${index}">${slot.capacity}</div>
-              <button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, 1)">+</button>
-            </div>
-          `;
+          row.innerHTML = `<div class="sa-time">${slot.time}</div><div class="sa-controls"><button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, -1)">−</button><div class="sa-val" id="sa_val_${index}">${slot.capacity}</div><button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, 1)">+</button></div>`;
           container.appendChild(row);
         });
-
         document.getElementById("saModal").classList.add("show");
       }
 
       function closeSAModal() {
         document.getElementById("saModal").classList.remove("show");
       }
-
       function adjustSASlot(index, delta) {
         const valEl = document.getElementById(`sa_val_${index}`);
         let current = parseInt(valEl.textContent);
@@ -1881,7 +1895,6 @@
         const btn = document.getElementById("saveSABtn");
         btn.disabled = true;
         btn.textContent = "Saving...";
-
         const updatedSlots = STATE.receivingSlots.map((slot, index) => {
           return {
             time: slot.time,
@@ -1890,7 +1903,6 @@
             ),
           };
         });
-
         google.script.run
           .withSuccessHandler((newState) => {
             STATE = newState;

@@ -402,6 +402,7 @@ const AppointmentService = (function () {
 
       return advisorsFromBreaktime.map((u) => ({
         name: String(u.team_member || "Unknown Advisor").trim(),
+        shift: u.shift, // CRITICAL: Now passing the shift string "6:00 - 15:00"
         breaks: {
           am: u.am_break,
           lunch: u.lunch,
