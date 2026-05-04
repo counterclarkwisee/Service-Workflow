@@ -302,6 +302,31 @@
         font-size: 11px;
         margin-top: 2px;
       }
+
+      /* --- UPDATED VEHICLE DESIGN --- */
+      .veh-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .plate-badge {
+        background: #ececef;
+        color: #1a1a1a;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-family: "Courier New", monospace;
+        border: 1px solid #d9d9dc;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+      }
+      .veh-model {
+        font-weight: 500;
+        color: #6b6b70;
+        font-size: 12px;
+      }
+
       .occupied-row td {
         padding: 12px 14px !important;
         font-weight: 500;
@@ -589,6 +614,7 @@
         border-radius: 8px;
         font: 13px Inter;
         color: #1a1a1a;
+        outline: none;
         background: #fff;
         display: block;
         box-sizing: border-box;
@@ -660,6 +686,7 @@
         border-radius: 8px;
         font: 13px Inter;
         color: #1a1a1a;
+        outline: none;
         background: #fff;
         width: auto !important;
       }
@@ -680,7 +707,6 @@
         min-width: 54px;
         text-align: center;
       }
-
       .pillbtn {
         appearance: none;
         background: #fff;
@@ -711,8 +737,6 @@
         display: inline-block;
         transition: all 0.2s;
       }
-
-      /* --- ACTIVE/CHOSEN STATE --- */
       .pillbtn.on {
         background: #334155 !important;
         border-color: #1e293b !important;
@@ -723,7 +747,6 @@
         background: #ffffff !important;
         box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
       }
-
       .optional {
         font-size: 10px;
         font-weight: 500;
@@ -823,7 +846,6 @@
         text-align: center;
       }
 
-      /* --- COMPACT JUMP BAR --- */
       .jump-bar {
         position: fixed;
         right: 35px;
@@ -868,8 +890,6 @@
           background-color: transparent;
         }
       }
-
-      /* --- 2x2 GRID FOR CONFIRMATION BUTTONS --- */
       .confirmation-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -912,7 +932,6 @@
             </select>
           </div>
         </div>
-
         <div class="viewtoggle">
           <button id="v_table" class="active" onclick="setView('table')">
             Appointment/MRS
@@ -923,7 +942,6 @@
           <button id="v_both" onclick="setView('both')">Both</button>
           <button id="v_grid" onclick="setView('grid')">Job Con</button>
         </div>
-
         <div class="filters-right">
           <button class="btn primary" onclick="refresh()">Refresh</button>
         </div>
@@ -973,41 +991,6 @@
       </div>
     </main>
 
-    <div class="modal" id="saModal">
-      <div class="drawer">
-        <div class="dhead">
-          <div>
-            <h2>SA Adjustments</h2>
-            <div class="sub">System Settings</div>
-          </div>
-          <button class="close" onclick="closeSAModal()">×</button>
-        </div>
-        <div class="dbody">
-          <div class="section">
-            <div class="section-title">⏰ Time Slots</div>
-            <div
-              id="sa_stepper_container"
-              style="display: flex; flex-direction: column; gap: 4px"
-            >
-              <div style="text-align: center; color: #64748b; padding: 20px">
-                Loading slots...
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="dactions">
-          <button class="btn" onclick="closeSAModal()">Cancel</button>
-          <button
-            class="btn primary"
-            id="saveSABtn"
-            onclick="saveSAAdjustments()"
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-
     <div class="modal" id="modal">
       <div class="drawer">
         <div class="dhead">
@@ -1021,15 +1004,14 @@
           <div class="section">
             <div class="section-title">🕒 Arrival Timing</div>
             <div class="field">
-              <label>Appointment Time (Arrival)</label>
-              <input
+              <label>Appointment Time (Arrival)</label
+              ><input
                 type="time"
                 id="f_apptTime"
                 onchange="syncWorkshopFromAppt()"
               />
             </div>
           </div>
-
           <div class="section">
             <div class="section-title">👤 Customer Info</div>
             <div class="field">
@@ -1047,7 +1029,6 @@
               <label>Contact Number</label><input id="f_contact" />
             </div>
           </div>
-
           <div class="section">
             <div class="section-title">🚗 Vehicle Info</div>
             <div class="row2">
@@ -1060,22 +1041,31 @@
             </div>
             <div class="row2">
               <div class="field">
-                <label>Vehicle Model</label>
-                <select id="f_model">
+                <label>Vehicle Model</label
+                ><select id="f_model">
                   <option value="">— Select model —</option>
                 </select>
               </div>
               <div class="field optional">
-                <label>Year</label><input id="f_year" />
+                <label>Year</label>
+                <input
+                  type="number"
+                  id="f_year"
+                  placeholder="Scroll to change"
+                  min="1980"
+                  max="2030"
+                  step="1"
+                  onwheel="handleYearScroll(event)"
+                  style="cursor: ns-resize"
+                />
               </div>
             </div>
           </div>
-
           <div class="section">
             <div class="section-title">🔧 Service Details</div>
             <div class="field">
-              <label>Service Category</label>
-              <select id="f_category" onchange="updateServiceRequests()">
+              <label>Service Category</label
+              ><select id="f_category" onchange="updateServiceRequests()">
                 <option value="">— Select Category —</option>
               </select>
             </div>
@@ -1084,8 +1074,8 @@
               id="serviceRequestContainer"
               style="display: none"
             >
-              <label>Service Request</label>
-              <select id="f_type">
+              <label>Service Request</label
+              ><select id="f_type">
                 <option value="">— Select Category First —</option>
               </select>
             </div>
@@ -1105,9 +1095,8 @@
                   id="f_start"
                   onchange="updateEndTimeFromStart()"
                   step="900"
-                />
-                <span class="dash">–</span>
-                <input type="time" id="f_end" disabled />
+                /><span class="dash">–</span
+                ><input type="time" id="f_end" disabled />
                 <div class="duration-stepper">
                   <div
                     class="step-btn"
@@ -1128,7 +1117,6 @@
               </div>
             </div>
           </div>
-
           <div class="section">
             <div class="section-title">
               🧑‍💼 Assignee Info<span class="optional">(optional)</span>
@@ -1145,12 +1133,10 @@
               <label>Contact Number</label><input id="f_assContact" />
             </div>
           </div>
-
           <div class="section">
             <div class="section-title">📝 Remarks</div>
             <div class="field"><textarea id="f_remarks"></textarea></div>
           </div>
-
           <div id="confirmationSection" style="display: none">
             <div class="section">
               <div class="section-title">📞 Confirmation Status</div>
@@ -1159,14 +1145,13 @@
                 id="olb_field_container"
                 style="margin-bottom: 20px"
               >
-                <label>OLB Number</label>
-                <input
+                <label>OLB Number</label
+                ><input
                   type="text"
                   id="f_olb_no"
                   placeholder="Enter OLB Number"
                 />
               </div>
-
               <div id="n1d_section_wrapper">
                 <div class="field" style="margin-top: 20px">
                   <label>N-1D Confirmation (1 Day Before)</label>
@@ -1235,7 +1220,6 @@
                   </div>
                 </div>
               </div>
-
               <div id="n1h_section_wrapper" style="margin-top: 20px">
                 <div class="field">
                   <label>N-1H Confirmation (1 Hour Before)</label>
@@ -1308,8 +1292,8 @@
           </div>
         </div>
         <div class="dactions">
-          <button class="btn" onclick="closeModal()">Cancel</button>
-          <button class="btn primary" id="bookBtn" onclick="save()">
+          <button class="btn" onclick="closeModal()">Cancel</button
+          ><button class="btn primary" id="bookBtn" onclick="save()">
             Book Appointment
           </button>
         </div>
@@ -1326,7 +1310,6 @@
       let selectedConfN1 = "",
         selectedConfH1 = "";
       window.view = "both";
-
       const today = new Date().toLocaleDateString("en-CA", {
         timeZone: "Asia/Manila",
       });
@@ -1344,7 +1327,6 @@
             return "#94a3b8";
         }
       }
-
       function updateEndTimeFromStart() {
         const startVal = document.getElementById("f_start").value;
         if (!startVal) return;
@@ -1352,7 +1334,6 @@
         const endMin = startMin + currentDuration;
         document.getElementById("f_end").value = fromMin(endMin);
       }
-
       function adjustDuration(delta) {
         if (currentDuration + delta < 30) return;
         currentDuration += delta;
@@ -1362,13 +1343,27 @@
           h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
         updateEndTimeFromStart();
       }
-
       function normalizeTimeTo24h(t) {
         if (!t) return "";
         let [h, m] = t.split(":").map(Number);
         return (
           h.toString().padStart(2, "0") + ":" + m.toString().padStart(2, "0")
         );
+      }
+
+      function handleYearScroll(event) {
+        event.preventDefault();
+        const input = event.target;
+        const direction = event.deltaY > 0 ? -1 : 1;
+        if (!input.value) {
+          input.value = new Date().getFullYear();
+          return;
+        }
+        const newValue = parseInt(input.value) + direction;
+        const maxYear = new Date().getFullYear() + 1;
+        if (newValue >= 1980 && newValue <= maxYear) {
+          input.value = newValue;
+        }
       }
 
       function refreshAdvisorDropdown(targetWorkshopTime) {
@@ -1441,7 +1436,6 @@
         });
         if (currentSelection) advisorSelect.value = currentSelection;
       }
-
       function syncWorkshopFromAppt() {
         const apptVal = document.getElementById("f_apptTime").value;
         if (!apptVal) return;
@@ -1451,7 +1445,6 @@
         updateEndTimeFromStart();
         refreshAdvisorDropdown(workshopTime);
       }
-
       function loadCustomerBase() {
         google.script.run
           .withSuccessHandler((data) => {
@@ -1459,7 +1452,6 @@
           })
           .getCustomerData();
       }
-
       const nameInput = document.getElementById("f_lastName");
       const resultsDiv = document.getElementById("customerResults");
       nameInput.addEventListener("input", function () {
@@ -1487,7 +1479,6 @@
           resultsDiv.style.display = "none";
         }
       });
-
       function selectCustomer(c) {
         document.getElementById("f_lastName").value = c["Customer Name"];
         document.getElementById("f_contact").value = c["Mobile"] || "";
@@ -1503,12 +1494,10 @@
         document.getElementById("f_model").disabled = false;
         resultsDiv.style.display = "none";
       }
-
       document.addEventListener("click", (e) => {
         if (!e.target.closest(".ac-container"))
           resultsDiv.style.display = "none";
       });
-
       function updateServiceRequests() {
         const cat = document.getElementById("f_category").value;
         const reqSelect = document.getElementById("f_type");
@@ -1540,7 +1529,6 @@
           });
         }
       }
-
       function fetchAndApplyRepairTime() {
         const category = document.getElementById("f_category").value,
           model = document.getElementById("f_model").value,
@@ -1558,14 +1546,6 @@
             .getRequiredRepairTime(model, kmSeries);
         }
       }
-
-      document
-        .getElementById("f_type")
-        .addEventListener("change", fetchAndApplyRepairTime);
-      document
-        .getElementById("f_model")
-        .addEventListener("change", fetchAndApplyRepairTime);
-
       function showToast(msg, type = "success") {
         const toast = document.getElementById("toast");
         toast.textContent = msg;
@@ -1575,7 +1555,6 @@
           toast.style.display = "none";
         }, 4000);
       }
-
       function fromMin(mins) {
         const h = Math.floor(mins / 60)
             .toString()
@@ -1621,12 +1600,10 @@
                 ? "Yesterday · " + label
                 : label;
       }
-
       function openReceptionView() {
         const url = scriptUrl + "?page=reception";
         window.open(url, "_top");
       }
-
       function setView(v) {
         window.view = v;
         const s = document.getElementById("split");
@@ -1650,7 +1627,6 @@
         const [h, m] = t.split(":").map(Number);
         return h * 60 + m;
       }
-
       function openExistingModal(apptId, bay, start) {
         const d = currentDate(),
           dayServices = STATE.servicesByDate[d] || [];
@@ -1659,7 +1635,6 @@
           openModal(bay, start, svc);
         }
       }
-
       function createJumpBar(times) {
         const existing = document.querySelector(".jump-bar");
         if (existing) existing.remove();
@@ -1750,8 +1725,7 @@
             const finalJumpId = idx === 0 ? jumpId : "";
             let statusHtml =
               '<div class="status-cell"><span class="badge">Booked</span>';
-            const olbVal = String(svc.olb_no || "").trim();
-            if (olbVal !== "") {
+            if (String(svc.olb_no || "").trim() !== "") {
               statusHtml += `<span class="badge b-navy-pill">WITH OLB</span>`;
             }
             const n1d = String(svc.n1d_status || "")
@@ -1771,7 +1745,9 @@
               statusHtml += `<span class="badge b-no-response-pill">N-1H: NR</span>`;
             }
             statusHtml += "</div>";
-            tableHtml += `<tr ${finalJumpId} class="occupied-row" style="background-color: #f8fafc;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #475569;"><strong>${svc.start}</strong><div class="sub">Arrival</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${svc.plate}<div class="sub">${svc.model || ""}</div></td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
+            const plateVal = svc.plate || svc.csNo || "N/A";
+            const vehHtml = `<div class="veh-wrapper"><span class="plate-badge">${plateVal}</span><span class="veh-model">${svc.model || ""}</span></div>`;
+            tableHtml += `<tr ${finalJumpId} class="occupied-row" style="background-color: #f8fafc;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #475569;"><strong>${svc.start}</strong><div class="sub">Arrival</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${vehHtml}</td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
           });
           const emptyNeeded = Math.max(0, capacity - matches.length);
           for (let i = 0; i < emptyNeeded; i++) {
@@ -1832,7 +1808,6 @@
         const defaultBay = STATE && STATE.bays.length ? STATE.bays[0].id : "";
         openModal(defaultBay, time);
       }
-
       function openModal(bay, start, existingData = null) {
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
@@ -1990,7 +1965,6 @@
             drawer.scrollTo({ top: drawer.scrollHeight, behavior: "smooth" });
           }, 300);
       }
-
       function openSAAdjustments() {
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
@@ -2008,7 +1982,6 @@
         });
         document.getElementById("saModal").classList.add("show");
       }
-
       function closeSAModal() {
         document.getElementById("saModal").classList.remove("show");
         const jb = document.querySelector(".jump-bar");
@@ -2021,7 +1994,6 @@
         if (current + delta < 0) return;
         valEl.textContent = current + delta;
       }
-
       function saveSAAdjustments() {
         const btn = document.getElementById("saveSABtn");
         btn.disabled = true;
@@ -2050,7 +2022,6 @@
           })
           .updateSlotCapacities(updatedSlots);
       }
-
       function setConfirmation(type, value) {
         const buttons = ["confirm", "no_response", "reschedule", "canceled"];
         buttons.forEach((btn) =>
@@ -2058,8 +2029,7 @@
         );
         let cleanId = value.toLowerCase().replace(" ", "_");
         if (cleanId === "rescheduled") cleanId = "reschedule";
-        const targetBtn = document.getElementById(`${type}_${cleanId}`);
-        if (targetBtn) targetBtn.classList.add("on");
+        document.getElementById(`${type}_${cleanId}`).classList.add("on");
         const rCont = document.getElementById(`${type}_reason_container`);
         const rsCont = document.getElementById(`${type}_reschedule_container`);
         if (value === "Rescheduled") {
@@ -2075,7 +2045,6 @@
         if (type === "n1") selectedConfN1 = value;
         if (type === "h1") selectedConfH1 = value;
       }
-
       function resetConfirmations() {
         ["n1", "h1"].forEach((t) => {
           ["confirm", "no_response", "reschedule", "canceled"].forEach((b) =>
@@ -2089,7 +2058,6 @@
         selectedConfN1 = "";
         selectedConfH1 = "";
       }
-
       function closeModal() {
         document.getElementById("modal").classList.remove("show");
         const jb = document.querySelector(".jump-bar");
@@ -2099,7 +2067,6 @@
       function val(id) {
         return document.getElementById(id).value;
       }
-
       function save() {
         const mode = document
           .getElementById("modalTitle")
@@ -2112,7 +2079,6 @@
         if (confStatus === "Rescheduled" || confStatus === "Canceled") {
           finalStatus = confStatus;
         }
-
         if (mode === "edit") {
           closeModal();
           showToast("Saving changes...", "success");
@@ -2145,7 +2111,6 @@
           closeModal();
           showToast("Booking appointment...", "success");
         }
-
         if (confStatus === "Canceled" && !currentReason) {
           alert("Please enter a reason.");
           return;
@@ -2166,7 +2131,6 @@
             return;
           }
         }
-
         const btn = document.getElementById("bookBtn");
         btn.disabled = true;
         btn.textContent = "Updating Database...";
@@ -2220,7 +2184,6 @@
           })
           [serverFunc](p);
       }
-
       document.getElementById("f_date").addEventListener("change", () => {
         updateDateChip();
         refresh();
