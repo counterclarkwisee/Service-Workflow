@@ -35,7 +35,7 @@
         height: 50px;
         border: 3px solid #f4f4f6;
         border-radius: 50%;
-        border-top-color: #334155; /* Slate color replacing red */
+        border-top-color: #334155;
         animation: spin 0.8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
         margin: 0 auto 20px;
       }
@@ -88,7 +88,7 @@
         padding: 14px 20px;
         border-radius: 12px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        border-top: 3px solid #334155; /* Slate color replacing red */
+        border-top: 3px solid #334155;
       }
       .filters-left,
       .filters-right {
@@ -233,7 +233,7 @@
         display: flex;
         flex-direction: column;
         min-height: 600px;
-        position: relative; /* needed for jump bar */
+        position: relative;
       }
       .pane-head {
         padding: 14px 18px;
@@ -264,7 +264,7 @@
       .pane-body {
         flex: 1;
         overflow: auto;
-        scroll-behavior: smooth; /* smooth jump */
+        scroll-behavior: smooth;
       }
       .tbl {
         width: 100%;
@@ -589,8 +589,9 @@
         border-radius: 8px;
         font: 13px Inter;
         color: #1a1a1a;
-        outline: none;
         background: #fff;
+        display: block;
+        box-sizing: border-box;
       }
       .field input:focus,
       .field select:focus,
@@ -601,6 +602,7 @@
         resize: vertical;
         min-height: 70px;
         font-family: Inter;
+        height: auto !important;
       }
       .field input[readonly],
       .field select[disabled],
@@ -618,6 +620,7 @@
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid #cbd5e1;
+        height: 40px;
       }
       .step-btn {
         padding: 8px 12px;
@@ -647,7 +650,8 @@
       .timerange {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        width: 100%;
       }
       .timerange input[type="time"] {
         flex: 1;
@@ -656,8 +660,8 @@
         border-radius: 8px;
         font: 13px Inter;
         color: #1a1a1a;
-        outline: none;
         background: #fff;
+        width: auto !important;
       }
       .timerange input[type="time"]:focus {
         border-color: #334155;
@@ -676,35 +680,50 @@
         min-width: 54px;
         text-align: center;
       }
+
       .pillbtn {
-        padding: 10px;
+        appearance: none;
+        background: #fff;
         border: 1px solid #d9d9dc;
         border-radius: 8px;
-        background: #fff;
-        cursor: pointer;
-        font: 600 12px Inter;
         color: #6b6b70;
+        cursor: pointer;
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 12px 10px;
+        text-align: center;
+        transition: all 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
       }
-      .pillbtn .dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        border: 2px solid #d9d9dc;
-      }
-      .pillbtn.on {
-        border-color: #334155;
+      .pillbtn:hover {
         background: #f1f5f9;
-        color: #334155;
+        border-color: #cbd5e1;
+      }
+      .pillbtn .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        display: inline-block;
+        transition: all 0.2s;
+      }
+
+      /* --- ACTIVE/CHOSEN STATE --- */
+      .pillbtn.on {
+        background: #334155 !important;
+        border-color: #1e293b !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       .pillbtn.on .dot {
-        border-color: #334155;
-        background: #334155;
-        box-shadow: inset 0 0 0 3px #fff;
+        background: #ffffff !important;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
       }
+
       .optional {
         font-size: 10px;
         font-weight: 500;
@@ -1356,10 +1375,8 @@
         const selectedDate = currentDate();
         const apptTimeRaw = document.getElementById("f_apptTime").value;
         const apptTimeNorm = normalizeTimeTo24h(apptTimeRaw);
-
         const dayServices = STATE.servicesByDate[selectedDate] || [];
         const targetTimeNorm = normalizeTimeTo24h(targetWorkshopTime);
-
         const isTimeInShift = (timeStr, shiftStr) => {
           if (!shiftStr || !timeStr) return false;
           try {
@@ -1372,7 +1389,6 @@
             return true;
           }
         };
-
         const isTimeInBreak = (timeStr, breakStr) => {
           if (!breakStr || !timeStr) return false;
           try {
@@ -1385,7 +1401,6 @@
             return false;
           }
         };
-
         const busyAdvisors = dayServices
           .filter((svc) => {
             const svcTime = normalizeTimeTo24h(svc.gridStart);
@@ -1395,26 +1410,20 @@
             return svcTime === targetTimeNorm && isActive;
           })
           .map((svc) => (svc.advisor || "").trim());
-
         const advisorSelect = document.getElementById("f_advisor");
         const currentSelection = advisorSelect.value;
         advisorSelect.innerHTML =
           '<option value="">— Select advisor —</option>';
-
         (STATE.advisors || []).forEach((adv) => {
           if (!isTimeInShift(apptTimeNorm, adv.shift)) return;
-
           const advName = adv.name.trim();
           const isBusy = busyAdvisors.includes(advName);
-
           const isOnBreak =
             isTimeInBreak(apptTimeNorm, adv.breaks?.am) ||
             isTimeInBreak(apptTimeNorm, adv.breaks?.lunch) ||
             isTimeInBreak(apptTimeNorm, adv.breaks?.pm);
-
           const opt = document.createElement("option");
           opt.value = advName;
-
           if (isBusy) {
             opt.textContent = advName + " (BUSY)";
             opt.disabled = true;
@@ -1632,8 +1641,6 @@
           const btn = document.getElementById("v_" + x);
           if (btn) btn.classList.toggle("active", x === v);
         });
-
-        // --- JUMP BAR VISIBILITY LOGIC ---
         const jb = document.querySelector(".jump-bar");
         if (jb)
           jb.style.display = v === "table" || v === "both" ? "flex" : "none";
@@ -1679,16 +1686,11 @@
           };
           container.appendChild(item);
         });
-
-        // --- ENSURE INITIAL VISIBILITY ---
         container.style.display =
           window.view === "table" || window.view === "both" ? "flex" : "none";
         document.body.appendChild(container);
       }
 
-      /**
-       * OPTIMIZED: Fragment-based batch rendering
-       */
       function render(s) {
         const loader = document.getElementById("loading-screen");
         if (loader) {
@@ -1706,7 +1708,6 @@
               .map((m) => `<option value="${m}">${m}</option>`)
               .join("");
         }
-
         document.getElementById("f_advisor").innerHTML =
           '<option value="">— Select advisor —</option>' +
           (s.advisors || []).map((a) => `<option>${a.name}</option>`).join("");
@@ -1715,7 +1716,6 @@
           (s.serviceCategories || [])
             .map((cat) => `<option value="${cat}">${cat}</option>`)
             .join("");
-
         const sourceSelect = document.getElementById("f_source");
         if (s.sources && s.sources.length > 0) {
           sourceSelect.innerHTML =
@@ -1727,10 +1727,8 @@
           sourceSelect.innerHTML =
             '<option value="">— Select Source —</option>';
         }
-
         document.getElementById("bayCount").textContent =
           s.bays.length + " bays";
-
         const d = currentDate(),
           dayServices = s.servicesByDate[d] || [],
           statusFilter = document.getElementById("f_status").value;
@@ -1739,18 +1737,15 @@
             ? x.status === statusFilter
             : x.status === "booked" || x.status === "scheduled",
         );
-
         let tableHtml = "";
         const receivingSlots = s.receivingSlots || [];
         let processedTimes = new Set();
-
         receivingSlots.forEach((slotData) => {
           const slotTime = slotData.time;
           const capacity = slotData.capacity;
           const matches = visible.filter((x) => x.start === slotTime);
           let jumpId = `id="jump-${slotTime}"`;
           processedTimes.add(slotTime);
-
           matches.forEach((svc, idx) => {
             const finalJumpId = idx === 0 ? jumpId : "";
             let statusHtml =
@@ -1784,25 +1779,20 @@
             tableHtml += `<tr ${finalJumpId} class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;"><td style="color: #9a9aa0;">${slotTime}</td><td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot</span></td></tr>`;
           }
         });
-
         document.querySelector("#tbl tbody").innerHTML = tableHtml;
         document.getElementById("tableCount").textContent = visible.length;
         createJumpBar(Array.from(processedTimes));
-
         const isToday = d === today;
         const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-
         let startHour = 8;
         if (s.branchCode === "TLB") startHour = 6;
         else if (s.branchCode === "TLC") startHour = 7;
-
         const GRID_SLOTS = [];
         for (let h = startHour; h <= 17; h++) {
           const hh = h.toString().padStart(2, "0");
           GRID_SLOTS.push(`${hh}:00`);
           if (h < 17) GRID_SLOTS.push(`${hh}:30`);
         }
-
         let gh =
           '<table class="gtbl"><thead><tr><th class="bay">Bay</th>' +
           GRID_SLOTS.map(
@@ -1844,10 +1834,8 @@
       }
 
       function openModal(bay, start, existingData = null) {
-        // --- HIDE JUMP BAR ON MODAL OPEN ---
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
-
         picked = {
           bay,
           start,
@@ -1866,7 +1854,6 @@
         bookBtn.textContent =
           mode === "edit" ? "Update Status" : "Book Appointment";
         confSection.style.display = mode === "edit" ? "block" : "none";
-
         if (mode === "edit") {
           document.getElementById("f_apptTime").value =
             existingData.start || "";
@@ -1909,10 +1896,7 @@
             n1dVal === "CONFIRMED" ? "none" : "block";
           document.getElementById("n1h_section_wrapper").style.display =
             n1hVal === "CONFIRMED" ? "none" : "block";
-
-          // --- ENSURE NO CONFIRMATION BUTTON IS CLICKED BY DEFAULT ON EDIT ---
           resetConfirmations();
-
           currentDuration = existingData.dur || 60;
           adjustDuration(0);
           const lockIds = [
@@ -2008,10 +1992,8 @@
       }
 
       function openSAAdjustments() {
-        // --- HIDE JUMP BAR ON SA OPEN ---
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
-
         const container = document.getElementById("sa_stepper_container");
         container.innerHTML = "";
         if (!STATE || !STATE.receivingSlots) {
@@ -2029,12 +2011,10 @@
 
       function closeSAModal() {
         document.getElementById("saModal").classList.remove("show");
-        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
         if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
       }
-
       function adjustSASlot(index, delta) {
         const valEl = document.getElementById(`sa_val_${index}`);
         let current = parseInt(valEl.textContent);
@@ -2080,8 +2060,6 @@
         if (cleanId === "rescheduled") cleanId = "reschedule";
         const targetBtn = document.getElementById(`${type}_${cleanId}`);
         if (targetBtn) targetBtn.classList.add("on");
-
-        // --- SHOW/HIDE CONDITIONAL INPUTS ---
         const rCont = document.getElementById(`${type}_reason_container`);
         const rsCont = document.getElementById(`${type}_reschedule_container`);
         if (value === "Rescheduled") {
@@ -2094,7 +2072,6 @@
           rCont.style.display = "none";
           rsCont.style.display = "none";
         }
-
         if (type === "n1") selectedConfN1 = value;
         if (type === "h1") selectedConfH1 = value;
       }
@@ -2115,7 +2092,6 @@
 
       function closeModal() {
         document.getElementById("modal").classList.remove("show");
-        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
         if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
@@ -2124,9 +2100,6 @@
         return document.getElementById(id).value;
       }
 
-      /**
-       * OPTIMIZED: block UI immediately to prevent double-clicks
-       */
       function save() {
         const mode = document
           .getElementById("modalTitle")
@@ -2140,11 +2113,9 @@
           finalStatus = confStatus;
         }
 
-        // --- OPTIMIZATION: Immediate UI Feedback (Optimistic UI) ---
         if (mode === "edit") {
           closeModal();
           showToast("Saving changes...", "success");
-
           const targetDate = currentDate();
           if (STATE.servicesByDate[targetDate]) {
             const index = STATE.servicesByDate[targetDate].findIndex(
@@ -2160,6 +2131,19 @@
               render(STATE);
             }
           }
+        } else {
+          if (
+            !val("f_start") ||
+            !val("f_apptTime") ||
+            !val("f_lastName") ||
+            !val("f_contact") ||
+            !val("f_plate")
+          ) {
+            alert("Please fill mandatory fields.");
+            return;
+          }
+          closeModal();
+          showToast("Booking appointment...", "success");
         }
 
         if (confStatus === "Canceled" && !currentReason) {
@@ -2182,22 +2166,10 @@
             return;
           }
         }
-        if (
-          mode === "create" &&
-          (!val("f_start") ||
-            !val("f_apptTime") ||
-            !val("f_lastName") ||
-            !val("f_contact") ||
-            !val("f_plate"))
-        ) {
-          alert("Please fill mandatory fields.");
-          return;
-        }
 
         const btn = document.getElementById("bookBtn");
         btn.disabled = true;
         btn.textContent = "Updating Database...";
-
         const p = {
           appointment_id: picked.appointment_id,
           date: picked.date,
@@ -2231,10 +2203,8 @@
         };
         const serverFunc =
           mode === "edit" ? "updateAppointmentStatus" : "bookService";
-
         google.script.run
           .withSuccessHandler((s) => {
-            // Background sync: update the actual STATE from server if it returned a full state
             if (s && s.servicesByDate) {
               STATE = s;
               render(s);
@@ -2260,7 +2230,6 @@
         if (e.target.id === "modal") closeModal();
         if (e.target.id === "saModal") closeSAModal();
       });
-
       updateDateChip();
       refresh();
       loadCustomerBase();
