@@ -8,54 +8,71 @@
     />
     <style>
       :root {
-        --primary-blue: #3b82f6;
-        --active-teal: #14b8a6;
         --bg-light: #f4f4f6;
         --text-main: #1a1a1a;
         --text-subtle: #6b6b70;
         --border-color: #d9d9dc;
         --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.05);
+        --slate: #334155;
+        --slate-dark: #1e293b;
+      }
+
+      * {
+        box-sizing: border-box;
       }
 
       body {
-        font-family: "Inter", sans-serif;
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
         background-color: var(--bg-light);
         color: var(--text-main);
         margin: 0;
-        padding: 30px;
+        padding: 20px 28px;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 16px;
+        font-size: 13px;
+        min-height: 100vh;
       }
 
-      /* --- HEADER --- */
-      .reception-header {
+      /* --- UNIFORM HEADER (Fixes Overlap) --- */
+      .filters {
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap; /* Fixes the overlap issue by allowing elements to wrap on smaller screens */
+        gap: 14px;
         background: #fff;
         padding: 14px 20px;
         border-radius: 12px;
         box-shadow: var(--shadow-sm);
+        border-top: 3px solid var(--slate);
+      }
+      .filters-left,
+      .filters-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
       }
       .greeting h1 {
         margin: 0;
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
+        color: var(--text-main);
       }
       .greeting p {
         margin: 2px 0 0;
         color: var(--text-subtle);
-        font-size: 13px;
+        font-size: 12px;
       }
-      .header-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
+
       .search-input-wrapper {
         position: relative;
         width: 300px;
+        max-width: 100%;
       }
       .search-input {
         width: 100%;
@@ -63,7 +80,11 @@
         border: 1px solid var(--border-color);
         border-radius: 8px;
         font: 13px Inter;
+        color: var(--text-main);
         outline: none;
+      }
+      .search-input:focus {
+        border-color: var(--slate);
       }
       .search-icon {
         position: absolute;
@@ -73,19 +94,29 @@
         opacity: 0.5;
         font-size: 14px;
       }
-      .btn-nav {
-        padding: 8px 16px;
+
+      /* --- BUTTONS --- */
+      .btn {
+        padding: 8px 18px;
         border-radius: 8px;
-        border: 1px solid var(--border-color);
-        background: #fff;
-        color: #3c3c3c;
         font: 600 13px Inter;
         cursor: pointer;
+        border: 1px solid var(--slate);
+        background: #fff;
+        color: var(--slate);
+        transition: all 0.2s;
       }
-      .btn-nav:hover {
-        background: #fdecee;
-        color: #eb0a1e;
-        border-color: #eb0a1e;
+      .btn:hover {
+        background: #f1f5f9;
+      }
+      .btn.ghost {
+        border-color: var(--border-color);
+        color: #3c3c3c;
+      }
+      .btn.ghost:hover {
+        background: #f1f5f9;
+        color: var(--slate);
+        border-color: var(--slate);
       }
 
       /* --- METRICS --- */
@@ -102,7 +133,7 @@
         border-top: 3px solid var(--border-color);
       }
       .metric-card.arrived {
-        border-top-color: var(--active-teal);
+        border-top-color: var(--slate);
       }
       .metric-title {
         font-size: 11px;
@@ -137,6 +168,7 @@
         font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
+        letter-spacing: 0.6px;
         border-bottom: 1px solid #ececef;
       }
       .recept-table td {
@@ -177,6 +209,7 @@
         display: block;
         font-size: 11px;
         color: var(--text-subtle);
+        margin-top: 2px;
       }
       .customer-info {
         font-weight: 600;
@@ -184,6 +217,7 @@
       .customer-sub {
         font-size: 11px;
         color: var(--text-subtle);
+        margin-top: 2px;
       }
 
       /* --- CONFIRMATION CHIPS --- */
@@ -221,127 +255,6 @@
         color: #495057;
       }
 
-      /* --- MODAL STYLES --- */
-      .modal {
-        position: fixed;
-        inset: 0;
-        background: rgba(26, 26, 26, 0.5);
-        display: none;
-        z-index: 10000;
-      }
-      .modal.show {
-        display: block;
-      }
-      .drawer {
-        position: absolute;
-        top: 0;
-        right: 0;
-        height: 100%;
-        width: 450px;
-        background: #fff;
-        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15);
-        overflow-y: auto;
-      }
-      .dhead {
-        padding: 20px 25px;
-        border-bottom: 1px solid #ececef;
-        display: flex;
-        background: #1a1a1a;
-        color: #fff;
-      }
-      .dhead h2 {
-        margin: 0;
-        font-size: 18px;
-      }
-      .close {
-        margin-left: auto;
-        background: none;
-        border: 0;
-        font-size: 24px;
-        color: #fff;
-        cursor: pointer;
-        opacity: 0.7;
-      }
-      .close:hover {
-        opacity: 1;
-      }
-      .dbody {
-        padding: 20px 25px;
-      }
-      .section-title {
-        font-size: 11px;
-        font-weight: 700;
-        color: #1a1a1a;
-        text-transform: uppercase;
-        margin-bottom: 12px;
-        border-bottom: 2px solid #eb0a1e;
-        padding-bottom: 4px;
-      }
-      .field {
-        margin-bottom: 15px;
-      }
-      .field label {
-        display: block;
-        font-size: 10px;
-        font-weight: 600;
-        color: #6b6b70;
-        text-transform: uppercase;
-        margin-bottom: 5px;
-      }
-      .field input,
-      .field textarea {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #d9d9dc;
-        border-radius: 8px;
-        font: 13px Inter;
-        outline: none;
-      }
-      .confirmation-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-      }
-      .pillbtn {
-        padding: 10px;
-        border: 1px solid #d9d9dc;
-        border-radius: 8px;
-        background: #fff;
-        cursor: pointer;
-        font: 600 11px Inter;
-        color: #6b6b70;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-      }
-      .pillbtn.on {
-        border-color: #eb0a1e;
-        background: #fdecee;
-        color: #eb0a1e;
-      }
-      .pillbtn .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        border: 2px solid #d9d9dc;
-      }
-      .pillbtn.on .dot {
-        background: #eb0a1e;
-        border-color: #eb0a1e;
-        box-shadow: inset 0 0 0 2px #fff;
-      }
-      .dactions {
-        padding: 16px 25px;
-        border-top: 1px solid #ececef;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        background: #f4f4f6;
-        position: sticky;
-        bottom: 0;
-      }
-
       /* --- ACTION CELL --- */
       .action-cell {
         display: flex;
@@ -374,98 +287,274 @@
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
       .btn-confirm-arrival {
-        background-color: #eb0a1e;
+        background-color: var(--slate);
         color: #fff;
         padding: 8px 16px;
-        border: none;
+        border: 1px solid var(--slate);
         border-radius: 8px;
         font-weight: 600;
         font-size: 12px;
         cursor: pointer;
+        transition: background-color 0.2s;
       }
       .btn-confirm-arrival:hover {
-        background-color: #c00819;
+        background-color: var(--slate-dark);
+      }
+
+      /* --- MODAL STYLES (UNIFORMED) --- */
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(26, 26, 26, 0.5);
+        display: none;
+        z-index: 10000;
+      }
+      .modal.show {
+        display: block;
+      }
+      .drawer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 450px;
+        background: #fff;
+        box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15);
+        overflow-y: auto;
+      }
+      .dhead {
+        padding: 22px 28px;
+        border-bottom: 1px solid #ececef;
+        display: flex;
+        align-items: flex-start;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .dhead h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .dhead .sub {
+        color: #b8b8bc;
+        font-size: 12px;
+        margin-top: 3px;
+      }
+      .close {
+        margin-left: auto;
+        background: none;
+        border: 0;
+        font-size: 22px;
+        color: #b8b8bc;
+        cursor: pointer;
+      }
+      .close:hover {
+        color: #fff;
+      }
+      .dbody {
+        padding: 20px 28px;
+      }
+      .section {
+        margin-bottom: 22px;
+      }
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #1a1a1a;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--slate);
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .field {
+        margin-bottom: 10px;
+      }
+      .field label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        color: #6b6b70;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .field input,
+      .field textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d9d9dc;
+        border-radius: 8px;
+        font: 13px Inter;
+        outline: none;
+        background: #fff;
+        box-sizing: border-box;
+      }
+      .field input:focus,
+      .field textarea:focus {
+        border-color: var(--slate);
+      }
+      .field textarea {
+        resize: vertical;
+        min-height: 70px;
+        font-family: Inter;
+      }
+      .confirmation-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      /* --- UNIFORM PILL BUTTONS --- */
+      .pillbtn {
+        appearance: none;
+        background: #fff;
+        border: 1px solid #d9d9dc;
+        border-radius: 8px;
+        color: #6b6b70;
+        cursor: pointer;
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 12px 10px;
+        text-align: center;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .pillbtn:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+      .pillbtn .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        display: inline-block;
+        transition: all 0.2s;
+      }
+      .pillbtn.on {
+        background: #f1f5f9;
+        border-color: var(--slate);
+        color: #1a1a1a;
+        box-shadow: inset 0 0 0 1px var(--slate);
+      }
+      .pillbtn.on .dot {
+        background: var(--slate);
+        box-shadow:
+          0 0 0 2px #fff,
+          0 0 0 3px var(--slate);
+      }
+
+      .dactions {
+        padding: 16px 28px;
+        border-top: 1px solid #ececef;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #f4f4f6;
+        position: sticky;
+        bottom: 0;
       }
 
       #toast {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #1a1a1a;
+        background: #1e8e3e;
         color: #fff;
         padding: 14px 24px;
         border-radius: 8px;
         display: none;
-        z-index: 1000;
+        z-index: 10000;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         font-weight: 600;
       }
     </style>
   </head>
   <body>
-    <div class="reception-header">
-      <div class="greeting">
-        <h1 id="greetingText">Good Morning</h1>
-        <p id="currentDateDisplay">Reception Desk</p>
-      </div>
-      <div class="header-right">
-        <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
-          <input
-            type="text"
-            class="search-input"
-            id="searchBox"
-            placeholder="Search plate or name..."
-            oninput="filterList()"
-          />
+    <main>
+      <div class="filters">
+        <div class="filters-left">
+          <div class="greeting">
+            <h1 id="greetingText">Good Morning</h1>
+            <p id="currentDateDisplay">Reception Desk</p>
+          </div>
         </div>
-        <button class="btn-nav" onclick="openAppointmentView()">
-          Back to Schedule
-        </button>
-      </div>
-    </div>
 
-    <div class="metrics-container">
-      <div class="metric-card">
-        <div class="metric-title">Appointments</div>
-        <div class="metric-value" id="count-total">0</div>
-      </div>
-      <div class="metric-card">
-        <div class="metric-title">Expected</div>
-        <div class="metric-value" id="count-pending">0</div>
-      </div>
-      <div class="metric-card arrived">
-        <div class="metric-title" style="color: var(--active-teal)">
-          Checked In
+        <div class="filters-right">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              class="search-input"
+              id="searchBox"
+              placeholder="Search plate or name..."
+              oninput="filterList()"
+            />
+          </div>
+          <button class="btn ghost" onclick="openAppointmentView()">
+            Back to Schedule
+          </button>
         </div>
-        <div class="metric-value" id="count-arrived">0</div>
       </div>
-    </div>
 
-    <div class="checkin-list-wrapper">
-      <table class="recept-table" id="receptTable">
-        <thead>
-          <tr>
-            <th class="w-time">Time</th>
-            <th class="w-veh">Vehicle</th>
-            <th class="w-cust">Customer</th>
-            <th class="w-adv">Advisor</th>
-            <th class="w-conf">Confirmation</th>
-            <th class="w-act" style="text-align: right">Action</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+      <div class="metrics-container">
+        <div class="metric-card">
+          <div class="metric-title">Appointments</div>
+          <div class="metric-value" id="count-total">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-title">Expected</div>
+          <div class="metric-value" id="count-pending">0</div>
+        </div>
+        <div class="metric-card arrived">
+          <div class="metric-title" style="color: var(--slate)">Checked In</div>
+          <div
+            class="metric-value"
+            id="count-arrived"
+            style="color: var(--slate)"
+          >
+            0
+          </div>
+        </div>
+      </div>
+
+      <div class="checkin-list-wrapper">
+        <table class="recept-table" id="receptTable">
+          <thead>
+            <tr>
+              <th class="w-time">Time</th>
+              <th class="w-veh">Vehicle</th>
+              <th class="w-cust">Customer</th>
+              <th class="w-adv">Advisor</th>
+              <th class="w-conf">Confirmation</th>
+              <th class="w-act" style="text-align: right">Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </main>
 
     <div class="modal" id="modal">
       <div class="drawer">
         <div class="dhead">
           <div>
             <h2 id="modalTitle">Update Confirmation</h2>
-            <div style="font-size: 11px; opacity: 0.8">
-              Reception Desk Management
-            </div>
+            <div class="sub">Reception Desk Management</div>
           </div>
           <button class="close" onclick="closeModal()">×</button>
         </div>
@@ -521,13 +610,7 @@
                 id="h1_reschedule_container"
                 style="display: none; margin-top: 10px"
               >
-                <div
-                  style="
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 10px;
-                  "
-                >
+                <div class="row2">
                   <div class="field">
                     <label>New Date</label
                     ><input type="date" id="f_h1_reschedule_date" />
@@ -551,12 +634,8 @@
           </div>
         </div>
         <div class="dactions">
-          <button class="btn-nav" onclick="closeModal()">Cancel</button>
-          <button
-            class="btn-confirm-arrival"
-            id="saveBtn"
-            onclick="saveStatus()"
-          >
+          <button class="btn ghost" onclick="closeModal()">Cancel</button>
+          <button class="btn primary" id="saveBtn" onclick="saveStatus()">
             Save Changes
           </button>
         </div>
@@ -575,6 +654,7 @@
       function openAppointmentView() {
         window.open(scriptUrl, "_top");
       }
+
       function refreshData() {
         google.script.run.withSuccessHandler(renderList).getState();
       }
@@ -657,7 +737,7 @@
                   </div>
                   <button class="btn-confirm-arrival" onclick="markArrived('${item.appointment_id}')">Arrived</button>
                 `
-                    : `<span style="color:var(--active-teal); font-weight:700; font-size:12px;">✓ ARRIVED</span>`
+                    : `<span style="color:var(--slate); font-weight:700; font-size:12px;">✓ ARRIVED</span>`
                 }
               </div>
             </td>
@@ -682,6 +762,7 @@
         let cleanId = value.toLowerCase().replace(" ", "_");
         if (cleanId === "rescheduled") cleanId = "reschedule";
         document.getElementById(`h1_${cleanId}`).classList.add("on");
+
         document.getElementById("h1_reason_container").style.display =
           value === "Rescheduled" || value === "Canceled" ? "block" : "none";
         document.getElementById("h1_reschedule_container").style.display =
@@ -709,7 +790,6 @@
           return;
         }
 
-        // package the FULL payload. The backend needs customer info to create the NEW row.
         const payload = {
           appointment_id: currentApptId,
           status:
@@ -722,7 +802,6 @@
           newDate: nDate,
           newTime: nTime,
 
-          // Data Inheritance for Rescheduling row creation
           lastName: currentDataRow.lastName,
           contact: currentDataRow.contact,
           plate: currentDataRow.plate,
