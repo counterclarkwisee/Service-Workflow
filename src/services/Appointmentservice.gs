@@ -133,12 +133,14 @@ const AppointmentService = (function () {
   }
 
   /**
-   * OPTIMIZED: Uses batch updates (setValues) to reduce API hits by 70%
+   * UPDATED: Now returns a simple status instead of full state refresh to eliminate 20s+ delay.
    */
   function updateAppointmentStatus(p, user) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const apptSheet = ss.getSheetByName("appointments");
-    const apptValues = apptSheet.getDataRange().getValues();
+
+    // Only fetch ID column to find row (Faster than fetching whole sheet)
+    const idColumn = apptSheet.getRange("A:A").getValues();
     const userEmail = user?.email || Session.getActiveUser().getEmail();
 
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
@@ -152,56 +154,44 @@ const AppointmentService = (function () {
         throw new Error("Conflict: " + conflict + " is already booked.");
     }
 
-    // Faster row lookup
     let rowIndex = -1;
-    for (let i = 1; i < apptValues.length; i++) {
-      if (apptValues[i][0] === p.appointment_id) {
+    for (let i = 1; i < idColumn.length; i++) {
+      if (idColumn[i][0] === p.appointment_id) {
         rowIndex = i + 1;
         break;
       }
     }
     if (rowIndex === -1) throw new Error("ID not found.");
 
-    // Prepare Batch Update for Columns O to U (15 to 21)
-    // Values: [Category, Status, Appt Date (keep current), N1 Conf, H1 Conf, Remarks, OLB]
-    const currentRow = apptValues[rowIndex - 1];
     const n1 =
       p.n1_conf === "Confirm"
         ? "CONFIRMED"
         : p.n1_conf
           ? p.n1_conf.toUpperCase()
-          : currentRow[17];
+          : "";
     const h1 =
       p.h1_conf === "Confirm"
         ? "CONFIRMED"
         : p.h1_conf
           ? p.h1_conf.toUpperCase()
-          : currentRow[18];
+          : "";
 
-    const batchValues = [
-      [
-        p.category, // Col 15 (O)
-        p.status, // Col 16 (P)
-        currentRow[16], // Col 17 (Q) - Keep existing
-        n1, // Col 18 (R)
-        h1, // Col 19 (S)
-        p.status_remarks, // Col 20 (T)
-        p.olb_no || "", // Col 21 (U)
-      ],
-    ];
+    // Batch set: Status (P), Arrival Date (Q), N1 (R), H1 (S), Remarks (T), OLB (U)
+    apptSheet
+      .getRange(rowIndex, 16, 1, 6)
+      .setValues([
+        [p.status, p.date, n1, h1, p.status_remarks, p.olb_no || ""],
+      ]);
 
-    // One hit to the spreadsheet for all 7 columns
-    apptSheet.getRange(rowIndex, 15, 1, 7).setValues(batchValues);
-
-    // Audit Trail Update (Batch of 2)
+    // Audit Trail Update
     apptSheet.getRange(rowIndex, 26, 1, 2).setValues([[new Date(), userEmail]]);
 
     // Sync Services status if needed
     if (p.status === "Canceled" || p.status === "Rescheduled") {
       const svcSheet = ss.getSheetByName("services");
-      const svcData = svcSheet.getRange("B:L").getValues(); // Only fetch ID and Status columns
-      for (let i = 1; i < svcData.length; i++) {
-        if (svcData[i][0] === p.appointment_id) {
+      const svcIdColumn = svcSheet.getRange("B:B").getValues();
+      for (let i = 1; i < svcIdColumn.length; i++) {
+        if (svcIdColumn[i][0] === p.appointment_id) {
           svcSheet.getRange(i + 1, 12).setValue(p.status.toLowerCase());
           break;
         }
@@ -222,7 +212,7 @@ const AppointmentService = (function () {
       );
     }
 
-    return getState();
+    return { success: true };
   }
 
   function _getConflictingBayName(bayId, date, startTime) {

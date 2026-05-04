@@ -1633,6 +1633,7 @@
           if (btn) btn.classList.toggle("active", x === v);
         });
 
+        // --- JUMP BAR VISIBILITY LOGIC ---
         const jb = document.querySelector(".jump-bar");
         if (jb)
           jb.style.display = v === "table" || v === "both" ? "flex" : "none";
@@ -1679,6 +1680,7 @@
           container.appendChild(item);
         });
 
+        // --- ENSURE INITIAL VISIBILITY ---
         container.style.display =
           window.view === "table" || window.view === "both" ? "flex" : "none";
         document.body.appendChild(container);
@@ -1842,6 +1844,7 @@
       }
 
       function openModal(bay, start, existingData = null) {
+        // --- HIDE JUMP BAR ON MODAL OPEN ---
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
 
@@ -1907,6 +1910,7 @@
           document.getElementById("n1h_section_wrapper").style.display =
             n1hVal === "CONFIRMED" ? "none" : "block";
 
+          // --- ENSURE NO CONFIRMATION BUTTON IS CLICKED BY DEFAULT ON EDIT ---
           resetConfirmations();
 
           currentDuration = existingData.dur || 60;
@@ -2004,6 +2008,7 @@
       }
 
       function openSAAdjustments() {
+        // --- HIDE JUMP BAR ON SA OPEN ---
         const jb = document.querySelector(".jump-bar");
         if (jb) jb.style.display = "none";
 
@@ -2024,6 +2029,7 @@
 
       function closeSAModal() {
         document.getElementById("saModal").classList.remove("show");
+        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
         if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
@@ -2075,6 +2081,7 @@
         const targetBtn = document.getElementById(`${type}_${cleanId}`);
         if (targetBtn) targetBtn.classList.add("on");
 
+        // --- SHOW/HIDE CONDITIONAL INPUTS ---
         const rCont = document.getElementById(`${type}_reason_container`);
         const rsCont = document.getElementById(`${type}_reschedule_container`);
         if (value === "Rescheduled") {
@@ -2108,6 +2115,7 @@
 
       function closeModal() {
         document.getElementById("modal").classList.remove("show");
+        // --- RESTORE JUMP BAR IF IN CORRECT VIEW ---
         const jb = document.querySelector(".jump-bar");
         if (jb && (window.view === "table" || window.view === "both"))
           jb.style.display = "flex";
@@ -2131,6 +2139,29 @@
         if (confStatus === "Rescheduled" || confStatus === "Canceled") {
           finalStatus = confStatus;
         }
+
+        // --- OPTIMIZATION: Immediate UI Feedback (Optimistic UI) ---
+        if (mode === "edit") {
+          closeModal();
+          showToast("Saving changes...", "success");
+
+          const targetDate = currentDate();
+          if (STATE.servicesByDate[targetDate]) {
+            const index = STATE.servicesByDate[targetDate].findIndex(
+              (s) => s.appointment_id === picked.appointment_id,
+            );
+            if (index !== -1) {
+              STATE.servicesByDate[targetDate][index].status = finalStatus;
+              STATE.servicesByDate[targetDate][index].n1d_status =
+                selectedConfN1;
+              STATE.servicesByDate[targetDate][index].n1h_status =
+                selectedConfH1;
+              STATE.servicesByDate[targetDate][index].olb_no = val("f_olb_no");
+              render(STATE);
+            }
+          }
+        }
+
         if (confStatus === "Canceled" && !currentReason) {
           alert("Please enter a reason.");
           return;
@@ -2165,7 +2196,7 @@
 
         const btn = document.getElementById("bookBtn");
         btn.disabled = true;
-        btn.textContent = "Processing...";
+        btn.textContent = "Updating Database...";
 
         const p = {
           appointment_id: picked.appointment_id,
@@ -2200,16 +2231,21 @@
         };
         const serverFunc =
           mode === "edit" ? "updateAppointmentStatus" : "bookService";
+
         google.script.run
           .withSuccessHandler((s) => {
-            render(s);
-            closeModal();
+            // Background sync: update the actual STATE from server if it returned a full state
+            if (s && s.servicesByDate) {
+              STATE = s;
+              render(s);
+            }
             btn.disabled = false;
             btn.textContent = "Success!";
-            showToast("Success!");
+            showToast("Update Successful");
           })
           .withFailureHandler((err) => {
             btn.disabled = false;
+            btn.textContent = "Try Again";
             onError(err);
           })
           [serverFunc](p);
