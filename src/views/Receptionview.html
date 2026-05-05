@@ -16,11 +16,9 @@
         --slate: #334155;
         --slate-dark: #1e293b;
       }
-
       * {
         box-sizing: border-box;
       }
-
       body {
         font-family:
           "Inter",
@@ -36,13 +34,11 @@
         font-size: 13px;
         min-height: 100vh;
       }
-
-      /* --- UNIFORM HEADER (Fixes Overlap) --- */
       .filters {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap; /* Fixes the overlap issue by allowing elements to wrap on smaller screens */
+        flex-wrap: wrap;
         gap: 14px;
         background: #fff;
         padding: 14px 20px;
@@ -68,7 +64,6 @@
         color: var(--text-subtle);
         font-size: 12px;
       }
-
       .search-input-wrapper {
         position: relative;
         width: 300px;
@@ -83,9 +78,6 @@
         color: var(--text-main);
         outline: none;
       }
-      .search-input:focus {
-        border-color: var(--slate);
-      }
       .search-icon {
         position: absolute;
         left: 12px;
@@ -94,8 +86,6 @@
         opacity: 0.5;
         font-size: 14px;
       }
-
-      /* --- BUTTONS --- */
       .btn {
         padding: 8px 18px;
         border-radius: 8px;
@@ -113,13 +103,6 @@
         border-color: var(--border-color);
         color: #3c3c3c;
       }
-      .btn.ghost:hover {
-        background: #f1f5f9;
-        color: var(--slate);
-        border-color: var(--slate);
-      }
-
-      /* --- METRICS --- */
       .metrics-container {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -147,8 +130,6 @@
         font-weight: 700;
         margin: 4px 0;
       }
-
-      /* --- TABLE --- */
       .checkin-list-wrapper {
         background: #fff;
         border-radius: 12px;
@@ -177,6 +158,8 @@
         vertical-align: middle;
         font-size: 13px;
       }
+
+      /* Column Widths */
       .w-time {
         width: 80px;
       }
@@ -192,6 +175,9 @@
       .w-conf {
         width: 110px;
       }
+      .w-remarks {
+        width: 200px;
+      } /* Added Column */
       .w-act {
         width: 320px;
       }
@@ -219,8 +205,6 @@
         color: var(--text-subtle);
         margin-top: 2px;
       }
-
-      /* --- CONFIRMATION CHIPS --- */
       .conf-wrapper {
         display: flex;
         gap: 6px;
@@ -238,7 +222,6 @@
         font-weight: 600;
         background: #fff;
         color: var(--text-subtle);
-        transition: all 0.2s;
       }
       .conf-chip span {
         font-size: 12px;
@@ -254,8 +237,6 @@
         border-color: #ced4da;
         color: #495057;
       }
-
-      /* --- ACTION CELL --- */
       .action-cell {
         display: flex;
         align-items: center;
@@ -276,15 +257,14 @@
         font-size: 11px;
         font-weight: 600;
         color: #3c3c3c;
-        transition: all 0.2s;
-      }
-      .radio-item input {
-        display: none;
       }
       .radio-item.selected {
         background: #fff;
         color: var(--text-main);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      .radio-item input {
+        display: none;
       }
       .btn-confirm-arrival {
         background-color: var(--slate);
@@ -295,13 +275,8 @@
         font-weight: 600;
         font-size: 12px;
         cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      .btn-confirm-arrival:hover {
-        background-color: var(--slate-dark);
       }
 
-      /* --- MODAL STYLES (UNIFORMED) --- */
       .modal {
         position: fixed;
         inset: 0;
@@ -335,11 +310,6 @@
         font-size: 20px;
         font-weight: 700;
       }
-      .dhead .sub {
-        color: #b8b8bc;
-        font-size: 12px;
-        margin-top: 3px;
-      }
       .close {
         margin-left: auto;
         background: none;
@@ -347,9 +317,6 @@
         font-size: 22px;
         color: #b8b8bc;
         cursor: pointer;
-      }
-      .close:hover {
-        color: #fff;
       }
       .dbody {
         padding: 20px 28px;
@@ -370,11 +337,6 @@
         padding-bottom: 6px;
         border-bottom: 2px solid var(--slate);
       }
-      .row2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
       .field {
         margin-bottom: 10px;
       }
@@ -383,7 +345,6 @@
         font-size: 10px;
         font-weight: 600;
         color: #6b6b70;
-        letter-spacing: 0.5px;
         text-transform: uppercase;
         margin-bottom: 5px;
       }
@@ -395,17 +356,7 @@
         border-radius: 8px;
         font: 13px Inter;
         outline: none;
-        background: #fff;
         box-sizing: border-box;
-      }
-      .field input:focus,
-      .field textarea:focus {
-        border-color: var(--slate);
-      }
-      .field textarea {
-        resize: vertical;
-        min-height: 70px;
-        font-family: Inter;
       }
       .confirmation-grid {
         display: grid;
@@ -413,37 +364,26 @@
         gap: 8px;
         margin-top: 8px;
       }
-
-      /* --- UNIFORM PILL BUTTONS --- */
       .pillbtn {
-        appearance: none;
         background: #fff;
         border: 1px solid #d9d9dc;
         border-radius: 8px;
         color: #6b6b70;
         cursor: pointer;
-        font-family: "Inter", sans-serif;
         font-size: 12px;
         font-weight: 600;
         padding: 12px 10px;
-        text-align: center;
-        transition: all 0.2s;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-      }
-      .pillbtn:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
+        transition: all 0.2s;
       }
       .pillbtn .dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
         background: #cbd5e1;
-        display: inline-block;
-        transition: all 0.2s;
       }
       .pillbtn.on {
         background: #f1f5f9;
@@ -453,11 +393,7 @@
       }
       .pillbtn.on .dot {
         background: var(--slate);
-        box-shadow:
-          0 0 0 2px #fff,
-          0 0 0 3px var(--slate);
       }
-
       .dactions {
         padding: 16px 28px;
         border-top: 1px solid #ececef;
@@ -468,7 +404,6 @@
         position: sticky;
         bottom: 0;
       }
-
       #toast {
         position: fixed;
         top: 20px;
@@ -479,7 +414,6 @@
         border-radius: 8px;
         display: none;
         z-index: 10000;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         font-weight: 600;
       }
     </style>
@@ -493,7 +427,6 @@
             <p id="currentDateDisplay">Reception Desk</p>
           </div>
         </div>
-
         <div class="filters-right">
           <div class="search-input-wrapper">
             <span class="search-icon">🔍</span>
@@ -541,6 +474,7 @@
               <th class="w-cust">Customer</th>
               <th class="w-adv">Advisor</th>
               <th class="w-conf">Confirmation</th>
+              <th class="w-remarks">Remarks</th>
               <th class="w-act" style="text-align: right">Action</th>
             </tr>
           </thead>
@@ -610,7 +544,7 @@
                 id="h1_reschedule_container"
                 style="display: none; margin-top: 10px"
               >
-                <div class="row2">
+                <div class="confirmation-grid">
                   <div class="field">
                     <label>New Date</label
                     ><input type="date" id="f_h1_reschedule_date" />
@@ -654,7 +588,6 @@
       function openAppointmentView() {
         window.open(scriptUrl, "_top");
       }
-
       function refreshData() {
         google.script.run.withSuccessHandler(renderList).getState();
       }
@@ -677,7 +610,12 @@
             : hour < 17
               ? "Good Afternoon"
               : "Good Evening";
-        ALL_DATA = state.servicesByDate[today] || [];
+
+        const rawTodayData = state.servicesByDate[today] || [];
+        ALL_DATA = rawTodayData.filter(
+          (item) => (item.status || "").toLowerCase() === "booked",
+        );
+
         updateStats(ALL_DATA);
         drawTable(ALL_DATA);
       }
@@ -691,6 +629,7 @@
           const isArrived = (item.status || "").toLowerCase() === "arrived";
           const n1d = String(item.n1d_status || "").toUpperCase();
           const n1h = String(item.n1h_status || "").toUpperCase();
+
           const dClass =
             n1d === "CONFIRMED"
               ? "conf-done"
@@ -703,8 +642,6 @@
               : n1h === "NO RESPONSE"
                 ? "conf-nr"
                 : "";
-
-          // LOCK LOGIC: Disable click if already CONFIRMED
           const isHLocked = n1h === "CONFIRMED";
           const hClick = isHLocked
             ? ""
@@ -725,6 +662,7 @@
                 <div class="conf-chip ${hClass}" ${hClick} style="${hCursor}"><span>H</span>${n1h === "CONFIRMED" ? "OK" : n1h === "NO RESPONSE" ? "NR" : "—"}</div>
               </div>
             </td>
+            <td><div class="customer-sub" style="font-style: italic; color: #475569;">${item.remarks || "—"}</div></td>
             <td style="text-align: right;">
               <div class="action-cell">
                 ${
@@ -762,7 +700,6 @@
         let cleanId = value.toLowerCase().replace(" ", "_");
         if (cleanId === "rescheduled") cleanId = "reschedule";
         document.getElementById(`h1_${cleanId}`).classList.add("on");
-
         document.getElementById("h1_reason_container").style.display =
           value === "Rescheduled" || value === "Canceled" ? "block" : "none";
         document.getElementById("h1_reschedule_container").style.display =
@@ -775,16 +712,13 @@
           alert("Please select a status");
           return;
         }
-
         const btn = document.getElementById("saveBtn");
         btn.disabled = true;
         btn.textContent = "Processing...";
-
         const nDate = document.getElementById("f_h1_reschedule_date").value;
         const nTime = document.getElementById("f_h1_reschedule_time").value;
-
         if (selectedConfH1 === "Rescheduled" && (!nDate || !nTime)) {
-          alert("Please provide New Date and Time for rescheduling.");
+          alert("Please provide New Date and Time.");
           btn.disabled = false;
           btn.textContent = "Save Changes";
           return;
@@ -801,7 +735,6 @@
           remarks: document.getElementById("f_remarks").value,
           newDate: nDate,
           newTime: nTime,
-
           lastName: currentDataRow.lastName,
           contact: currentDataRow.contact,
           plate: currentDataRow.plate,
@@ -834,7 +767,6 @@
       function closeModal() {
         document.getElementById("modal").classList.remove("show");
       }
-
       function resetConfirmations() {
         selectedConfH1 = "";
         ["confirm", "no_response", "reschedule", "canceled"].forEach((b) =>
