@@ -379,38 +379,62 @@ const AppointmentService = (function () {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const apptSheet = ss.getSheetByName("appointments");
     const svcSheet = ss.getSheetByName("services");
-    if (!apptSheet || !svcSheet) return;
+    if (!apptSheet || !svcSheet) return false;
 
     const apptData = apptSheet.getDataRange().getValues();
     const svcData = svcSheet.getDataRange().getValues();
+
     const now = new Date();
-    const nowTimeStr = Utilities.formatDate(now, "Asia/Manila", "HH:mm");
     const nowDateStr = Utilities.formatDate(now, "Asia/Manila", "yyyy-MM-dd");
+    const nowTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+    let updatesMade = false;
 
     for (let i = 1; i < apptData.length; i++) {
-      const apptDate =
-        apptData[i][9] instanceof Date
-          ? Utilities.formatDate(apptData[i][9], "Asia/Manila", "yyyy-MM-dd")
-          : apptData[i][9];
-      const apptTime = apptData[i][10];
-      const status = apptData[i][15];
       const apptId = apptData[i][0];
+      const apptDateRaw = apptData[i][9]; // Column J: appointment_date
+      const apptTimeRaw = apptData[i][10]; // Column K: scheduled_arrival_time
+      const status = String(apptData[i][15]).toLowerCase(); // Column P: status
 
-      if (
-        status === "booked" &&
-        apptDate <= nowDateStr &&
-        apptTime < nowTimeStr
-      ) {
-        apptSheet.getRange(i + 1, 16).setValue("No Show");
+      // Only scan "booked" appointments
+      if (status !== "booked") continue;
 
-        for (let j = 1; j < svcData.length; j++) {
-          if (svcData[j][1] === apptId) {
-            svcSheet.getRange(j + 1, 12).setValue("no show");
-            break;
+      const apptDateStr =
+        apptDateRaw instanceof Date
+          ? Utilities.formatDate(apptDateRaw, "Asia/Manila", "yyyy-MM-dd")
+          : String(apptDateRaw);
+
+      // Don't process future bookings
+      if (apptDateStr > nowDateStr) continue;
+
+      try {
+        const timeParts = String(apptTimeRaw).split(":");
+        if (timeParts.length < 2) continue;
+
+        const apptTotalMinutes =
+          parseInt(timeParts[0], 10) * 60 + parseInt(timeParts[1], 10);
+
+        const isPastDate = apptDateStr < nowDateStr;
+        const isLateToday = nowTotalMinutes - apptTotalMinutes >= 15;
+
+        if (isPastDate || isLateToday) {
+          // Update Appointments DB
+          apptSheet.getRange(i + 1, 16).setValue("no show");
+
+          // Update Services DB
+          for (let j = 1; j < svcData.length; j++) {
+            if (svcData[j][1] === apptId) {
+              svcSheet.getRange(j + 1, 12).setValue("no show");
+              break;
+            }
           }
+          updatesMade = true;
         }
+      } catch (e) {
+        console.error("Cleanup error on row " + (i + 1) + ": " + e.message);
       }
     }
+    return updatesMade;
   }
 
   function _subtractMinutes(timeStr, mins) {
