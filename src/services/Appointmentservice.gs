@@ -5,7 +5,6 @@ const AppointmentService = (function () {
   const BRANCH_CODE = "TLB";
 
   function getState() {
-    // 1. Fetch all static/mapping data in parallel (if possible, but Repo-based is fine)
     const bays = BayRepo.listActive();
     const services = ServiceRepo.listAll();
     const appointments = AppointmentRepo.listAll();
@@ -13,14 +12,12 @@ const AppointmentService = (function () {
     const sources = DataFieldsRepo.getSourceList();
     const gjCommonJobs = GJServiceRequestRepo.listCommonJobs();
 
-    // 2. Faster unique filtering for customers
     const uniqueCustomerNames = [
       ...new Set(CustomerRepo.listAll().map((c) => c.customer_name)),
     ]
       .filter(Boolean)
       .sort();
 
-    // 3. Optimized SKU fetching
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const skuSheet = ss.getSheetByName("sku");
     let skuModels = [];
@@ -36,7 +33,6 @@ const AppointmentService = (function () {
       }
     }
 
-    // 4. Create a Map for O(1) appointment lookup
     const apptById = appointments.reduce((acc, a) => {
       acc[a.appointment_id] = a;
       return acc;
@@ -99,49 +95,73 @@ const AppointmentService = (function () {
     };
   }
 
-  function getRequiredRepairTime(model, kmSeries) {
-    const allRequests = PMSServiceRequestRepo.listAll();
-    const branch = BRANCH_CODE.toUpperCase();
-    const normalize = (str) =>
-      String(str || "")
-        .toUpperCase()
-        .replace(/CHECK\s*UP/g, "")
-        .replace(/,/g, "")
-        .replace(/\s+/g, "");
-    const targetKm = normalize(kmSeries);
-    const targetModel = String(model || "")
-      .toUpperCase()
-      .trim();
+  /**
+   * UPDATED: Handles both PMS (Column G) and GJ (Model-based columns)
+   */
+  function getRequiredRepairTime(category, request, model) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!request || !model) return 60;
 
-    const match = allRequests.find((r) => {
-      const rowModelStr = String(r.model || "").toUpperCase();
-      return (
-        normalize(r.km_series) === targetKm &&
-        rowModelStr
-          .split(",")
-          .map((m) => m.trim())
-          .includes(targetModel) &&
-        String(r.branch || "")
-          .toUpperCase()
-          .includes(branch)
-      );
-    });
+    try {
+      if (category === "EM" || category === "PMS") {
+        const sheet = ss.getSheetByName("pms_service_request");
+        if (!sheet) return 60;
+        const data = sheet.getDataRange().getValues();
+        const normalize = (str) =>
+          String(str || "")
+            .toUpperCase()
+            .replace(/CHECK\s*UP/gi, "")
+            .replace(/,/g, "")
+            .replace(/\s+/g, "");
+        const targetReq = normalize(request);
+        const targetModel = String(model).toUpperCase().trim();
 
-    return match
-      ? Number(String(match.repair_time).replace(/[^0-9]/g, "")) || 60
-      : 60;
+        for (let i = 1; i < data.length; i++) {
+          const rowReq = normalize(data[i][0]);
+          const rowModels = String(data[i][2]).toUpperCase();
+          if (rowReq === targetReq && rowModels.includes(targetModel)) {
+            let mins = parseInt(data[i][6], 10); // Column G
+            return isNaN(mins) ? 60 : mins;
+          }
+        }
+      } else if (category === "GJ") {
+        const sheet = ss.getSheetByName("gj_service_request");
+        if (!sheet) return 60;
+        const data = sheet.getDataRange().getValues();
+        const headers = data[1].map((h) => String(h).trim().toUpperCase()); // Row 2
+        const colIndex = headers.indexOf(String(model).trim().toUpperCase());
+        if (colIndex === -1) return 60;
+
+        const targetReq = String(request).trim().toUpperCase();
+        for (let i = 2; i < data.length; i++) {
+          if (String(data[i][0]).trim().toUpperCase() === targetReq) {
+            let val = parseFloat(data[i][colIndex]);
+            return !isNaN(val) ? Math.round(val * 60) : 60;
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return 60;
   }
 
-  /**
-   * UPDATED: Now returns a simple status instead of full state refresh to eliminate 20s+ delay.
-   */
   function updateAppointmentStatus(p, user) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const apptSheet = ss.getSheetByName("appointments");
-
-    // Only fetch ID column to find row (Faster than fetching whole sheet)
     const idColumn = apptSheet.getRange("A:A").getValues();
     const userEmail = user?.email || Session.getActiveUser().getEmail();
+
+    let rowIndex = -1;
+    let originalAdvisor = ""; // Store original SA to copy
+    for (let i = 1; i < idColumn.length; i++) {
+      if (idColumn[i][0] === p.appointment_id) {
+        rowIndex = i + 1;
+        originalAdvisor = apptSheet.getRange(rowIndex, 12).getValue(); // Column L (Assigned Advisor)
+        break;
+      }
+    }
+    if (rowIndex === -1) throw new Error("ID not found.");
 
     if (p.status === "Rescheduled" && p.newDate && p.newTime) {
       const newWorkshopStart = _addMinutes(p.newTime, 30);
@@ -153,15 +173,6 @@ const AppointmentService = (function () {
       if (conflict)
         throw new Error("Conflict: " + conflict + " is already booked.");
     }
-
-    let rowIndex = -1;
-    for (let i = 1; i < idColumn.length; i++) {
-      if (idColumn[i][0] === p.appointment_id) {
-        rowIndex = i + 1;
-        break;
-      }
-    }
-    if (rowIndex === -1) throw new Error("ID not found.");
 
     const n1 =
       p.n1_conf === "Confirm"
@@ -176,17 +187,13 @@ const AppointmentService = (function () {
           ? p.h1_conf.toUpperCase()
           : "";
 
-    // Batch set: Status (P), Arrival Date (Q), N1 (R), H1 (S), Remarks (T), OLB (U)
     apptSheet
       .getRange(rowIndex, 16, 1, 6)
       .setValues([
         [p.status, p.date, n1, h1, p.status_remarks, p.olb_no || ""],
       ]);
-
-    // Audit Trail Update
     apptSheet.getRange(rowIndex, 26, 1, 2).setValues([[new Date(), userEmail]]);
 
-    // Sync Services status if needed
     if (p.status === "Canceled" || p.status === "Rescheduled") {
       const svcSheet = ss.getSheetByName("services");
       const svcIdColumn = svcSheet.getRange("B:B").getValues();
@@ -207,11 +214,11 @@ const AppointmentService = (function () {
           apptArrival: p.newTime,
           reschedule_id: p.appointment_id,
           status: "booked",
+          advisor: originalAdvisor, // COPIED: Service Advisor from original line
         },
         { email: userEmail },
       );
     }
-
     return { success: true };
   }
 
@@ -271,7 +278,7 @@ const AppointmentService = (function () {
       vehicle_year: p.year || "",
       appointment_date: p.date,
       scheduled_arrival_time: arrivalTime,
-      assigned_advisor_name: p.advisor || "",
+      assigned_advisor_name: p.advisor || "", // Inherited SA name is used here
       service_category: p.category || "",
       status: p.status || "booked",
       reschedule_id: p.reschedule_id || "",

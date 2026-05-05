@@ -167,6 +167,7 @@
         border: 1px solid #334155;
         background: #fff;
         color: #334155;
+        transition: all 0.2s;
       }
       .btn:hover {
         background: #f1f5f9;
@@ -208,6 +209,7 @@
         color: #3c3c3c;
         border-radius: 7px;
         cursor: pointer;
+        transition: all 0.2s;
       }
       .viewtoggle button.active {
         background: #fff;
@@ -511,6 +513,8 @@
         background: #e6f4ea;
         border-color: #1e8e3e;
       }
+
+      /* --- MODAL DRAWER --- */
       .modal {
         position: fixed;
         inset: 0;
@@ -616,7 +620,6 @@
         color: #1a1a1a;
         outline: none;
         background: #fff;
-        display: block;
         box-sizing: border-box;
       }
       .field input:focus,
@@ -638,6 +641,36 @@
         cursor: not-allowed;
         border-style: dashed;
       }
+
+      .dactions {
+        padding: 16px 28px;
+        border-top: 1px solid #ececef;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #f4f4f6;
+        position: sticky;
+        bottom: 0;
+      }
+      #toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        z-index: 9999;
+        display: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .toast-success {
+        background: #1e8e3e;
+      }
+      .toast-error {
+        background: #dc2626;
+      }
+
       .duration-stepper {
         display: flex;
         align-items: center;
@@ -697,16 +730,7 @@
         color: #6b6b70;
         font-weight: 600;
       }
-      .timerange .durpreview {
-        padding: 6px 10px;
-        background: #f1f5f9;
-        color: #334155;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 11px;
-        min-width: 54px;
-        text-align: center;
-      }
+
       .pillbtn {
         appearance: none;
         background: #fff;
@@ -755,34 +779,7 @@
         letter-spacing: 0;
         margin-left: 6px;
       }
-      .dactions {
-        padding: 16px 28px;
-        border-top: 1px solid #ececef;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        background: #f4f4f6;
-        position: sticky;
-        bottom: 0;
-      }
-      #toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 16px 24px;
-        border-radius: 8px;
-        color: #fff;
-        font-weight: 600;
-        z-index: 9999;
-        display: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-      .toast-success {
-        background: #1e8e3e;
-      }
-      .toast-error {
-        background: #dc2626;
-      }
+
       .ac-container {
         position: relative;
       }
@@ -817,79 +814,8 @@
         font-size: 11px;
         color: #6b6b70;
       }
-      .sa-stepper-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #fff;
-        padding: 10px 14px;
-        border: 1px solid #ececef;
-        border-radius: 10px;
-        margin-bottom: 8px;
-      }
-      .sa-time {
-        font-weight: 700;
-        font-size: 14px;
-        color: #1a1a1a;
-        width: 60px;
-      }
-      .sa-controls {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-      }
-      .sa-val {
-        font-weight: 700;
-        font-size: 16px;
-        color: #334155;
-        min-width: 20px;
-        text-align: center;
-      }
 
-      .jump-bar {
-        position: fixed;
-        right: 35px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 30px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        border-radius: 15px;
-        padding: 10px 0;
-        z-index: 100;
-        border: 1px solid #d9d9dc;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        gap: 2px;
-      }
-      .jump-item {
-        font-size: 10px;
-        font-weight: 700;
-        color: #6b6b70;
-        cursor: pointer;
-        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        width: 100%;
-        text-align: center;
-        padding: 2px 0;
-      }
-      .jump-item:hover {
-        color: #334155;
-        transform: scale(1.5);
-      }
-      .jump-target-highlight {
-        animation: highlightPulse 1.5s ease-out;
-      }
-      @keyframes highlightPulse {
-        0% {
-          background-color: #f1f5f9;
-        }
-        100% {
-          background-color: transparent;
-        }
-      }
+      /* --- 2x2 GRID FOR CONFIRMATION BADGES --- */
       .confirmation-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1042,7 +968,7 @@
             <div class="row2">
               <div class="field">
                 <label>Vehicle Model</label
-                ><select id="f_model">
+                ><select id="f_model" onchange="fetchAndApplyRepairTime()">
                   <option value="">— Select model —</option>
                 </select>
               </div>
@@ -1075,7 +1001,7 @@
               style="display: none"
             >
               <label>Service Request</label
-              ><select id="f_type">
+              ><select id="f_type" onchange="fetchAndApplyRepairTime()">
                 <option value="">— Select Category First —</option>
               </select>
             </div>
@@ -1315,6 +1241,7 @@
       });
       document.getElementById("f_date").value = today;
 
+      // Business Logic Functions
       function getCategoryColor(cat) {
         switch (String(cat).toUpperCase()) {
           case "EM":
@@ -1484,6 +1411,8 @@
         document.getElementById("f_contact").value = c["Mobile"] || "";
         document.getElementById("f_plate").value = c["Plate No."] || "";
         document.getElementById("f_csNo").value = c["CS Number"] || "";
+
+        // FUZZY MODEL MATCH LOGIC RESTORED
         const variantStr = (c["Model"] || "").toUpperCase();
         let matched = "";
         if (variantStr && ALL_MODELS.length > 0) {
@@ -1493,11 +1422,14 @@
         document.getElementById("f_model").value = matched;
         document.getElementById("f_model").disabled = false;
         resultsDiv.style.display = "none";
+        fetchAndApplyRepairTime();
       }
       document.addEventListener("click", (e) => {
         if (!e.target.closest(".ac-container"))
           resultsDiv.style.display = "none";
       });
+
+      // --- SERVICE REQUEST & REPAIR TIME LOGIC RESTORED ---
       function updateServiceRequests() {
         const cat = document.getElementById("f_category").value;
         const reqSelect = document.getElementById("f_type");
@@ -1528,24 +1460,29 @@
             reqSelect.appendChild(opt);
           });
         }
+        fetchAndApplyRepairTime();
       }
+
       function fetchAndApplyRepairTime() {
         const category = document.getElementById("f_category").value,
           model = document.getElementById("f_model").value,
           kmSeries = document.getElementById("f_type").value;
-        if ((category === "EM" || category === "PMS") && model && kmSeries) {
+        if (category && model && kmSeries) {
           google.script.run
             .withSuccessHandler((minutes) => {
               currentDuration = parseInt(minutes, 10);
+              if (isNaN(currentDuration) || currentDuration <= 0)
+                currentDuration = 60;
               const h = Math.floor(currentDuration / 60),
                 m = currentDuration % 60;
               document.getElementById("f_durPreview").textContent =
                 h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
               updateEndTimeFromStart();
             })
-            .getRequiredRepairTime(model, kmSeries);
+            .getRequiredRepairTime(category, kmSeries, model);
         }
       }
+
       function showToast(msg, type = "success") {
         const toast = document.getElementById("toast");
         toast.textContent = msg;
@@ -1618,9 +1555,6 @@
           const btn = document.getElementById("v_" + x);
           if (btn) btn.classList.toggle("active", x === v);
         });
-        const jb = document.querySelector(".jump-bar");
-        if (jb)
-          jb.style.display = v === "table" || v === "both" ? "flex" : "none";
       }
       function toMin(t) {
         if (!t) return 0;
@@ -1634,36 +1568,6 @@
         if (svc) {
           openModal(bay, start, svc);
         }
-      }
-      function createJumpBar(times) {
-        const existing = document.querySelector(".jump-bar");
-        if (existing) existing.remove();
-        const container = document.createElement("div");
-        container.className = "jump-bar";
-        const uniqueHours = [...new Set(times.map((t) => t.split(":")[0]))];
-        uniqueHours.forEach((hour) => {
-          const item = document.createElement("div");
-          item.className = "jump-item";
-          item.textContent = hour;
-          item.title = `Jump to ${hour}:00`;
-          item.onclick = () => {
-            const target =
-              document.getElementById(`jump-${hour}:00`) ||
-              document.getElementById(`jump-${hour}:30`);
-            if (target) {
-              target.scrollIntoView({ behavior: "smooth", block: "start" });
-              target.classList.add("jump-target-highlight");
-              setTimeout(
-                () => target.classList.remove("jump-target-highlight"),
-                2000,
-              );
-            }
-          };
-          container.appendChild(item);
-        });
-        container.style.display =
-          window.view === "table" || window.view === "both" ? "flex" : "none";
-        document.body.appendChild(container);
       }
 
       function render(s) {
@@ -1714,15 +1618,11 @@
         );
         let tableHtml = "";
         const receivingSlots = s.receivingSlots || [];
-        let processedTimes = new Set();
         receivingSlots.forEach((slotData) => {
           const slotTime = slotData.time;
           const capacity = slotData.capacity;
           const matches = visible.filter((x) => x.start === slotTime);
-          let jumpId = `id="jump-${slotTime}"`;
-          processedTimes.add(slotTime);
           matches.forEach((svc, idx) => {
-            const finalJumpId = idx === 0 ? jumpId : "";
             let statusHtml =
               '<div class="status-cell"><span class="badge">Booked</span>';
             if (String(svc.olb_no || "").trim() !== "") {
@@ -1747,34 +1647,24 @@
             statusHtml += "</div>";
             const plateVal = svc.plate || svc.csNo || "N/A";
             const vehHtml = `<div class="veh-wrapper"><span class="plate-badge">${plateVal}</span><span class="veh-model">${svc.model || ""}</span></div>`;
-            tableHtml += `<tr ${finalJumpId} class="occupied-row" style="background-color: #f8fafc;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #475569;"><strong>${svc.start}</strong><div class="sub">Arrival</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${vehHtml}</td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
+            tableHtml += `<tr class="occupied-row" style="background-color: #f8fafc;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><td style="border-left: 4px solid #475569;"><strong>${svc.start}</strong><div class="sub">Arrival</div></td><td><div class="name">${svc.lastName}</div><div class="sub">${svc.contact || ""}</div></td><td>${vehHtml}</td><td>${svc.type}</td><td>${s.bays.find((b) => b.id === svc.bay)?.name || svc.bay}</td><td>${svc.advisor}</td><td>${statusHtml}</td></tr>`;
           });
           const emptyNeeded = Math.max(0, capacity - matches.length);
           for (let i = 0; i < emptyNeeded; i++) {
-            const finalJumpId = matches.length === 0 && i === 0 ? jumpId : "";
-            tableHtml += `<tr ${finalJumpId} class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;"><td style="color: #9a9aa0;">${slotTime}</td><td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot</span></td></tr>`;
+            tableHtml += `<tr class="empty-slot-row" onclick="openModalWithDefaultsAt('${slotTime}')" style="cursor: pointer; opacity: 0.6;"><td style="color: #9a9aa0;">${slotTime}</td><td colspan="6" style="color: #9a9aa0; font-style: italic;"><span style="font-size: 11px;">+ Available Arrival Slot</span></td></tr>`;
           }
         });
         document.querySelector("#tbl tbody").innerHTML = tableHtml;
         document.getElementById("tableCount").textContent = visible.length;
-        createJumpBar(Array.from(processedTimes));
-        const isToday = d === today;
-        const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
-        let startHour = 8;
-        if (s.branchCode === "TLB") startHour = 6;
-        else if (s.branchCode === "TLC") startHour = 7;
         const GRID_SLOTS = [];
+        let startHour = s.branchCode === "TLB" ? 6 : 7;
         for (let h = startHour; h <= 17; h++) {
           const hh = h.toString().padStart(2, "0");
-          GRID_SLOTS.push(`${hh}:00`);
-          if (h < 17) GRID_SLOTS.push(`${hh}:30`);
+          GRID_SLOTS.push(`${hh}:00`, `${hh}:30`);
         }
         let gh =
           '<table class="gtbl"><thead><tr><th class="bay">Bay</th>' +
-          GRID_SLOTS.map(
-            (t) =>
-              `<th class="${isToday && nowMin >= toMin(t) && nowMin < toMin(t) + 30 ? "now" : ""}">${t}</th>`,
-          ).join("") +
+          GRID_SLOTS.map((t) => `<th>${t}</th>`).join("") +
           "</tr></thead><tbody>";
         s.bays.forEach((b) => {
           gh += `<tr><td class="bay">${b.name}</td>`;
@@ -1783,10 +1673,9 @@
             const slot = GRID_SLOTS[i],
               svc = visible.find((x) => x.bay === b.id && x.gridStart === slot);
             if (svc) {
-              const span = Math.max(1, Math.round(svc.dur / 30)),
-                name = svc.lastName,
-                catColor = getCategoryColor(svc.service_category);
-              gh += `<td colspan="${span}"><div class="block s-scheduled" style="border-left-color: ${catColor}; background-color: ${catColor}15;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><div class="name" style="color: ${catColor};">${name}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
+              const span = Math.max(1, Math.round(svc.dur / 30));
+              const catColor = getCategoryColor(svc.service_category);
+              gh += `<td colspan="${span}"><div class="block s-scheduled" style="border-left-color: ${catColor}; background-color: ${catColor}15;" onclick="openExistingModal('${svc.appointment_id}', '${svc.bay}', '${svc.start}')"><div class="name" style="color: ${catColor};">${svc.lastName}</div><div class="meta">${svc.type} · ${svc.plate}</div></div></td>`;
               i += span;
             } else {
               gh += `<td class="free" onclick="openModal('${b.id}','${slot}')"></td>`;
@@ -1801,34 +1690,27 @@
       function refresh() {
         google.script.run.withSuccessHandler(render).getState();
       }
-      function onError(err) {
-        alert(String(err).replace("Error: ", ""));
-      }
       function openModalWithDefaultsAt(time) {
-        const defaultBay = STATE && STATE.bays.length ? STATE.bays[0].id : "";
-        openModal(defaultBay, time);
+        openModal(STATE.bays[0].id, time);
       }
       function openModal(bay, start, existingData = null) {
-        const jb = document.querySelector(".jump-bar");
-        if (jb) jb.style.display = "none";
         picked = {
           bay,
           start,
           date: currentDate(),
-          appointment_id: existingData ? existingData.appointment_id : null,
-          status: existingData ? existingData.status : "booked",
+          appointment_id: existingData?.appointment_id,
+          status: existingData?.status || "booked",
         };
         const modal = document.getElementById("modal"),
-          drawer = modal.querySelector(".drawer"),
           title = document.getElementById("modalTitle"),
-          bookBtn = document.getElementById("bookBtn"),
-          confSection = document.getElementById("confirmationSection");
+          bookBtn = document.getElementById("bookBtn");
         const mode = existingData ? "edit" : "create";
         title.textContent =
           mode === "edit" ? "Edit Appointment" : "New Appointment";
         bookBtn.textContent =
           mode === "edit" ? "Update Status" : "Book Appointment";
-        confSection.style.display = mode === "edit" ? "block" : "none";
+        document.getElementById("confirmationSection").style.display =
+          mode === "edit" ? "block" : "none";
         if (mode === "edit") {
           document.getElementById("f_apptTime").value =
             existingData.start || "";
@@ -1861,16 +1743,6 @@
           document.getElementById("f_olb_no").value = olbVal;
           document.getElementById("olb_field_container").style.display =
             olbVal !== "" ? "none" : "block";
-          const n1dVal = String(existingData.n1d_status || "")
-            .trim()
-            .toUpperCase();
-          const n1hVal = String(existingData.n1h_status || "")
-            .trim()
-            .toUpperCase();
-          document.getElementById("n1d_section_wrapper").style.display =
-            n1dVal === "CONFIRMED" ? "none" : "block";
-          document.getElementById("n1h_section_wrapper").style.display =
-            n1hVal === "CONFIRMED" ? "none" : "block";
           resetConfirmations();
           currentDuration = existingData.dur || 60;
           adjustDuration(0);
@@ -1885,7 +1757,6 @@
             "f_assLast",
             "f_assFirst",
             "f_assContact",
-            "f_remarks",
             "f_category",
             "f_type",
             "f_advisor",
@@ -1899,13 +1770,14 @@
               if (el.tagName === "SELECT") el.disabled = true;
             }
           });
+          // Ensuring remarks is always editable
+          document.getElementById("f_remarks").removeAttribute("readonly");
+          // Disabling stepper logic specifically for edit
           document.getElementById("dur_minus").style.pointerEvents = "none";
           document.getElementById("dur_plus").style.pointerEvents = "none";
+          document.getElementById("dur_minus").style.opacity = "0.4";
+          document.getElementById("dur_plus").style.opacity = "0.4";
         } else {
-          document.getElementById("n1d_section_wrapper").style.display =
-            "block";
-          document.getElementById("n1h_section_wrapper").style.display =
-            "block";
           document.getElementById("f_olb_no").value = "";
           document.getElementById("olb_field_container").style.display =
             "block";
@@ -1928,21 +1800,6 @@
             const el = document.getElementById(id);
             if (el) {
               if (el.tagName === "SELECT") {
-                if (id === "f_category") {
-                  el.innerHTML =
-                    '<option value="">— Select Category —</option>' +
-                    (STATE.serviceCategories || [])
-                      .map((cat) => `<option value="${cat}">${cat}</option>`)
-                      .join("");
-                } else if (id === "f_source") {
-                  el.innerHTML =
-                    '<option value="">— Select Source —</option>' +
-                    (STATE.sources || [])
-                      .map((s) => `<option value="${s}">${s}</option>`)
-                      .join("");
-                } else {
-                  el.innerHTML = '<option value="">— Select —</option>';
-                }
                 el.disabled = false;
               } else {
                 el.value = "";
@@ -1951,101 +1808,106 @@
             }
           });
           document.getElementById("f_apptTime").value = start;
-          document.getElementById("f_apptTime").removeAttribute("readonly");
           currentDuration = 60;
           adjustDuration(0);
           syncWorkshopFromAppt();
           resetConfirmations();
+          // Reset stepper buttons
           document.getElementById("dur_minus").style.pointerEvents = "auto";
           document.getElementById("dur_plus").style.pointerEvents = "auto";
+          document.getElementById("dur_minus").style.opacity = "1";
+          document.getElementById("dur_plus").style.opacity = "1";
         }
         modal.classList.add("show");
-        if (mode === "edit")
-          setTimeout(() => {
-            drawer.scrollTo({ top: drawer.scrollHeight, behavior: "smooth" });
-          }, 300);
       }
-      function openSAAdjustments() {
-        const jb = document.querySelector(".jump-bar");
-        if (jb) jb.style.display = "none";
-        const container = document.getElementById("sa_stepper_container");
-        container.innerHTML = "";
-        if (!STATE || !STATE.receivingSlots) {
-          showToast("Error: No slot data found", "error");
-          return;
-        }
-        STATE.receivingSlots.forEach((slot, index) => {
-          const row = document.createElement("div");
-          row.className = "sa-stepper-row";
-          row.innerHTML = `<div class="sa-time">${slot.time}</div><div class="sa-controls"><button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, -1)">−</button><div class="sa-val" id="sa_val_${index}">${slot.capacity}</div><button class="btn ghost" style="padding: 5px 12px;" onclick="adjustSASlot(${index}, 1)">+</button></div>`;
-          container.appendChild(row);
-        });
-        document.getElementById("saModal").classList.add("show");
+      function closeModal() {
+        document.getElementById("modal").classList.remove("show");
       }
-      function closeSAModal() {
-        document.getElementById("saModal").classList.remove("show");
-        const jb = document.querySelector(".jump-bar");
-        if (jb && (window.view === "table" || window.view === "both"))
-          jb.style.display = "flex";
+      function val(id) {
+        return document.getElementById(id).value;
       }
-      function adjustSASlot(index, delta) {
-        const valEl = document.getElementById(`sa_val_${index}`);
-        let current = parseInt(valEl.textContent);
-        if (current + delta < 0) return;
-        valEl.textContent = current + delta;
-      }
-      function saveSAAdjustments() {
-        const btn = document.getElementById("saveSABtn");
+
+      function save() {
+        const mode = document
+          .getElementById("modalTitle")
+          .textContent.includes("Edit")
+          ? "edit"
+          : "create";
+        const btn = document.getElementById("bookBtn");
         btn.disabled = true;
-        btn.textContent = "Saving...";
-        const updatedSlots = STATE.receivingSlots.map((slot, index) => {
-          return {
-            time: slot.time,
-            capacity: parseInt(
-              document.getElementById(`sa_val_${index}`).textContent,
-            ),
-          };
-        });
+        btn.textContent = "Processing...";
+        const p = {
+          appointment_id: picked.appointment_id,
+          date: picked.date,
+          bay: picked.bay,
+          start: val("f_start"),
+          dur: currentDuration,
+          apptArrival: val("f_apptTime"),
+          lastName: val("f_lastName"),
+          contact: val("f_contact"),
+          plate: val("f_plate"),
+          csNo: val("f_csNo"),
+          model: val("f_model"),
+          year: val("f_year"),
+          type: val("f_type"),
+          source: val("f_source"),
+          advisor: val("f_advisor"),
+          remarks: val("f_remarks"),
+          status: picked.status,
+          olb_no: val("f_olb_no"),
+          category: val("f_category"),
+          n1_conf: selectedConfN1,
+          h1_conf: selectedConfH1,
+        };
+        const serverFunc =
+          mode === "edit" ? "updateAppointmentStatus" : "bookService";
         google.script.run
-          .withSuccessHandler((newState) => {
-            STATE = newState;
-            render(newState);
-            closeSAModal();
+          .withSuccessHandler(() => {
+            closeModal();
+            refresh();
+            showToast("Update Successful");
             btn.disabled = false;
-            btn.textContent = "Save Changes";
-            showToast("Capacities updated successfully!");
+            btn.textContent =
+              mode === "edit" ? "Update Status" : "Book Appointment";
           })
           .withFailureHandler((err) => {
             btn.disabled = false;
-            btn.textContent = "Save Changes";
-            onError(err);
+            alert(err);
           })
-          .updateSlotCapacities(updatedSlots);
+          [serverFunc](p);
       }
-      function setConfirmation(type, value) {
-        const buttons = ["confirm", "no_response", "reschedule", "canceled"];
-        buttons.forEach((btn) =>
-          document.getElementById(`${type}_${btn}`).classList.remove("on"),
+
+      // --- RESTORED CONFIRMATION FUNCTIONS ---
+      function setConfirmation(t, v) {
+        if (t === "n1") selectedConfN1 = v;
+        else selectedConfH1 = v;
+
+        ["confirm", "no_response", "reschedule", "canceled"].forEach((b) =>
+          document.getElementById(`${t}_${b}`).classList.remove("on"),
         );
-        let cleanId = value.toLowerCase().replace(" ", "_");
+
+        let cleanId = v.toLowerCase().replace(" ", "_");
         if (cleanId === "rescheduled") cleanId = "reschedule";
-        document.getElementById(`${type}_${cleanId}`).classList.add("on");
-        const rCont = document.getElementById(`${type}_reason_container`);
-        const rsCont = document.getElementById(`${type}_reschedule_container`);
-        if (value === "Rescheduled") {
+        document.getElementById(`${t}_${cleanId}`).classList.add("on");
+
+        const rCont = document.getElementById(`${t}_reason_container`);
+        const rsCont = document.getElementById(`${t}_reschedule_container`);
+
+        if (v === "Rescheduled") {
           rCont.style.display = "block";
           rsCont.style.display = "block";
-        } else if (value === "Canceled") {
+        } else if (v === "Canceled") {
           rCont.style.display = "block";
           rsCont.style.display = "none";
         } else {
           rCont.style.display = "none";
           rsCont.style.display = "none";
         }
-        if (type === "n1") selectedConfN1 = value;
-        if (type === "h1") selectedConfH1 = value;
       }
+
       function resetConfirmations() {
+        selectedConfN1 = "";
+        selectedConfH1 = "";
         ["n1", "h1"].forEach((t) => {
           ["confirm", "no_response", "reschedule", "canceled"].forEach((b) =>
             document.getElementById(`${t}_${b}`).classList.remove("on"),
@@ -2055,135 +1917,9 @@
           document.getElementById(`${t}_reschedule_container`).style.display =
             "none";
         });
-        selectedConfN1 = "";
-        selectedConfH1 = "";
       }
-      function closeModal() {
-        document.getElementById("modal").classList.remove("show");
-        const jb = document.querySelector(".jump-bar");
-        if (jb && (window.view === "table" || window.view === "both"))
-          jb.style.display = "flex";
-      }
-      function val(id) {
-        return document.getElementById(id).value;
-      }
-      function save() {
-        const mode = document
-          .getElementById("modalTitle")
-          .textContent.includes("Edit")
-          ? "edit"
-          : "create";
-        const confStatus = selectedConfH1 || selectedConfN1;
-        const currentReason = val("f_h1_reason") || val("f_n1_reason");
-        let finalStatus = picked.status || "booked";
-        if (confStatus === "Rescheduled" || confStatus === "Canceled") {
-          finalStatus = confStatus;
-        }
-        if (mode === "edit") {
-          closeModal();
-          showToast("Saving changes...", "success");
-          const targetDate = currentDate();
-          if (STATE.servicesByDate[targetDate]) {
-            const index = STATE.servicesByDate[targetDate].findIndex(
-              (s) => s.appointment_id === picked.appointment_id,
-            );
-            if (index !== -1) {
-              STATE.servicesByDate[targetDate][index].status = finalStatus;
-              STATE.servicesByDate[targetDate][index].n1d_status =
-                selectedConfN1;
-              STATE.servicesByDate[targetDate][index].n1h_status =
-                selectedConfH1;
-              STATE.servicesByDate[targetDate][index].olb_no = val("f_olb_no");
-              render(STATE);
-            }
-          }
-        } else {
-          if (
-            !val("f_start") ||
-            !val("f_apptTime") ||
-            !val("f_lastName") ||
-            !val("f_contact") ||
-            !val("f_plate")
-          ) {
-            alert("Please fill mandatory fields.");
-            return;
-          }
-          closeModal();
-          showToast("Booking appointment...", "success");
-        }
-        if (confStatus === "Canceled" && !currentReason) {
-          alert("Please enter a reason.");
-          return;
-        }
-        let nDate = "",
-          nTime = "";
-        if (confStatus === "Rescheduled") {
-          nDate =
-            selectedConfH1 === "Rescheduled"
-              ? val("f_h1_reschedule_date")
-              : val("f_n1_reschedule_date");
-          nTime =
-            selectedConfH1 === "Rescheduled"
-              ? val("f_h1_reschedule_time")
-              : val("f_n1_reschedule_time");
-          if (!nDate || !nTime) {
-            alert("Please provide New Date and Time.");
-            return;
-          }
-        }
-        const btn = document.getElementById("bookBtn");
-        btn.disabled = true;
-        btn.textContent = "Updating Database...";
-        const p = {
-          appointment_id: picked.appointment_id,
-          date: picked.date,
-          bay: picked.bay,
-          start: val("f_start"),
-          dur: currentDuration,
-          apptArrival: val("f_apptTime"),
-          lastName: val("f_lastName"),
-          firstName: "",
-          contact: val("f_contact"),
-          plate: val("f_plate"),
-          csNo: val("f_csNo"),
-          model: val("f_model"),
-          year: val("f_year"),
-          type: val("f_type"),
-          source: val("f_source"),
-          advisor: val("f_advisor"),
-          assigneeLast: val("f_assLast"),
-          assigneeFirst: val("f_assFirst"),
-          assigneeContact: val("f_assContact"),
-          remarks: val("f_remarks"),
-          status: finalStatus,
-          status_remarks: currentReason || "",
-          newDate: nDate,
-          newTime: nTime,
-          category: val("f_category"),
-          n1_conf: selectedConfN1,
-          h1_conf: selectedConfH1,
-          reschedule_id: picked.appointment_id,
-          olb_no: val("f_olb_no"),
-        };
-        const serverFunc =
-          mode === "edit" ? "updateAppointmentStatus" : "bookService";
-        google.script.run
-          .withSuccessHandler((s) => {
-            if (s && s.servicesByDate) {
-              STATE = s;
-              render(s);
-            }
-            btn.disabled = false;
-            btn.textContent = "Success!";
-            showToast("Update Successful");
-          })
-          .withFailureHandler((err) => {
-            btn.disabled = false;
-            btn.textContent = "Try Again";
-            onError(err);
-          })
-          [serverFunc](p);
-      }
+      // ---------------------------------------
+
       document.getElementById("f_date").addEventListener("change", () => {
         updateDateChip();
         refresh();
@@ -2191,12 +1927,11 @@
       document.getElementById("f_status").addEventListener("change", refresh);
       document.getElementById("modal").addEventListener("click", (e) => {
         if (e.target.id === "modal") closeModal();
-        if (e.target.id === "saModal") closeSAModal();
       });
+
       updateDateChip();
       refresh();
       loadCustomerBase();
-      setInterval(refresh, 60000);
     </script>
   </body>
 </html>
