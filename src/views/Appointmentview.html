@@ -1688,8 +1688,11 @@
       }
 
       function refresh() {
+        // Just get the state and render.
+        // The No-Show cleanup is handled by your 15-min background trigger.
         google.script.run.withSuccessHandler(render).getState();
       }
+
       function openModalWithDefaultsAt(time) {
         openModal(STATE.bays[0].id, time);
       }

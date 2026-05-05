@@ -95,9 +95,6 @@ const AppointmentService = (function () {
     };
   }
 
-  /**
-   * UPDATED: Handles both PMS (Column G) and GJ (Model-based columns)
-   */
   function getRequiredRepairTime(category, request, model) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     if (!request || !model) return 60;
@@ -120,7 +117,7 @@ const AppointmentService = (function () {
           const rowReq = normalize(data[i][0]);
           const rowModels = String(data[i][2]).toUpperCase();
           if (rowReq === targetReq && rowModels.includes(targetModel)) {
-            let mins = parseInt(data[i][6], 10); // Column G
+            let mins = parseInt(data[i][6], 10);
             return isNaN(mins) ? 60 : mins;
           }
         }
@@ -128,7 +125,7 @@ const AppointmentService = (function () {
         const sheet = ss.getSheetByName("gj_service_request");
         if (!sheet) return 60;
         const data = sheet.getDataRange().getValues();
-        const headers = data[1].map((h) => String(h).trim().toUpperCase()); // Row 2
+        const headers = data[1].map((h) => String(h).trim().toUpperCase());
         const colIndex = headers.indexOf(String(model).trim().toUpperCase());
         if (colIndex === -1) return 60;
 
@@ -153,11 +150,11 @@ const AppointmentService = (function () {
     const userEmail = user?.email || Session.getActiveUser().getEmail();
 
     let rowIndex = -1;
-    let originalAdvisor = ""; // Store original SA to copy
+    let originalAdvisor = "";
     for (let i = 1; i < idColumn.length; i++) {
       if (idColumn[i][0] === p.appointment_id) {
         rowIndex = i + 1;
-        originalAdvisor = apptSheet.getRange(rowIndex, 12).getValue(); // Column L (Assigned Advisor)
+        originalAdvisor = apptSheet.getRange(rowIndex, 12).getValue();
         break;
       }
     }
@@ -214,7 +211,7 @@ const AppointmentService = (function () {
           apptArrival: p.newTime,
           reschedule_id: p.appointment_id,
           status: "booked",
-          advisor: originalAdvisor, // COPIED: Service Advisor from original line
+          advisor: originalAdvisor,
         },
         { email: userEmail },
       );
@@ -278,7 +275,7 @@ const AppointmentService = (function () {
       vehicle_year: p.year || "",
       appointment_date: p.date,
       scheduled_arrival_time: arrivalTime,
-      assigned_advisor_name: p.advisor || "", // Inherited SA name is used here
+      assigned_advisor_name: p.advisor || "",
       service_category: p.category || "",
       status: p.status || "booked",
       reschedule_id: p.reschedule_id || "",
@@ -341,6 +338,48 @@ const AppointmentService = (function () {
       }
     });
     return getState();
+  }
+
+  // --- AUTO NO SHOW CLEANUP LOGIC ---
+  function runAutoNoShowCleanup() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const apptSheet = ss.getSheetByName("appointments");
+    const svcSheet = ss.getSheetByName("services");
+    if (!apptSheet || !svcSheet) return;
+
+    const apptData = apptSheet.getDataRange().getValues();
+    const svcData = svcSheet.getDataRange().getValues();
+    const now = new Date();
+    const nowTimeStr = Utilities.formatDate(now, "Asia/Manila", "HH:mm");
+    const nowDateStr = Utilities.formatDate(now, "Asia/Manila", "yyyy-MM-dd");
+
+    for (let i = 1; i < apptData.length; i++) {
+      const apptDate =
+        apptData[i][9] instanceof Date
+          ? Utilities.formatDate(apptData[i][9], "Asia/Manila", "yyyy-MM-dd")
+          : apptData[i][9];
+      const apptTime = apptData[i][10];
+      const status = apptData[i][15];
+      const apptId = apptData[i][0];
+
+      // If appointment is today or in the past, and arrival time has passed
+      if (
+        status === "booked" &&
+        apptDate <= nowDateStr &&
+        apptTime < nowTimeStr
+      ) {
+        // Mark Appointment as No Show (Column P)
+        apptSheet.getRange(i + 1, 16).setValue("No Show");
+
+        // Mark corresponding Service as no show (Column L in Services)
+        for (let j = 1; j < svcData.length; j++) {
+          if (svcData[j][1] === apptId) {
+            svcSheet.getRange(j + 1, 12).setValue("no show");
+            break;
+          }
+        }
+      }
+    }
   }
 
   function _subtractMinutes(timeStr, mins) {
@@ -416,5 +455,6 @@ const AppointmentService = (function () {
     getRequiredRepairTime,
     updateAppointmentStatus,
     updateSlotCapacities,
+    runAutoNoShowCleanup, // Exported to be called from the frontend
   };
 })();

@@ -111,9 +111,22 @@ function bookService(payload) {
 
 /**
  * BRIDGE FUNCTION: Repair Time Lookup
+ * Updated to take category, request, and model to match UI requirements.
  */
-function getRequiredRepairTime(model, kmSeries) {
-  return AppointmentService.getRequiredRepairTime(model, kmSeries);
+function getRequiredRepairTime(category, request, model) {
+  return AppointmentService.getRequiredRepairTime(category, request, model);
+}
+
+/**
+ * BRIDGE FUNCTION: Auto No Show Cleanup
+ * Triggered automatically by a Time-Driven Trigger.
+ */
+function runAutoNoShowCleanup() {
+  try {
+    return AppointmentService.runAutoNoShowCleanup();
+  } catch (e) {
+    console.error("Auto Cleanup Failed: " + e.message);
+  }
 }
 
 /**
