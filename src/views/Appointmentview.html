@@ -1611,11 +1611,23 @@
         const d = currentDate(),
           dayServices = s.servicesByDate[d] || [],
           statusFilter = document.getElementById("f_status").value;
-        const visible = dayServices.filter((x) =>
-          statusFilter
-            ? x.status === statusFilter
-            : x.status === "booked" || x.status === "scheduled",
-        );
+
+        // --- UPDATED FILTER LOGIC ---
+        const visible = dayServices.filter((x) => {
+          const status = (x.status || "").toLowerCase();
+          if (statusFilter) {
+            return status === statusFilter;
+          }
+          // Default view: Exclude terminal statuses only
+          const excludedStatuses = [
+            "canceled",
+            "cancelled",
+            "rescheduled",
+            "no show",
+          ];
+          return !excludedStatuses.includes(status);
+        });
+
         let tableHtml = "";
         const receivingSlots = s.receivingSlots || [];
         receivingSlots.forEach((slotData) => {
@@ -1624,7 +1636,9 @@
           const matches = visible.filter((x) => x.start === slotTime);
           matches.forEach((svc, idx) => {
             let statusHtml =
-              '<div class="status-cell"><span class="badge">Booked</span>';
+              '<div class="status-cell"><span class="badge">' +
+              svc.status +
+              "</span>";
             if (String(svc.olb_no || "").trim() !== "") {
               statusHtml += `<span class="badge b-navy-pill">WITH OLB</span>`;
             }
