@@ -340,6 +340,40 @@ const AppointmentService = (function () {
     return getState();
   }
 
+  // --- SAVING ARRIVED CUSTOMER LOGIC ---
+  function updateStatusToArrived(apptId, punctuality) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const apptSheet = ss.getSheetByName("appointments");
+    const apptData = apptSheet.getDataRange().getValues();
+
+    let rowIndex = -1;
+    for (let i = 1; i < apptData.length; i++) {
+      if (apptData[i][0] === apptId) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (rowIndex === -1) throw new Error("Appointment ID not found.");
+
+    // Update Column P (Status) to "arrived"
+    apptSheet.getRange(rowIndex, 16).setValue("arrived");
+
+    // Update Column AB (arrival_status) with punctuality
+    apptSheet.getRange(rowIndex, 28).setValue(punctuality);
+
+    // Update corresponding Service status to "in_service" in services sheet
+    const svcSheet = ss.getSheetByName("services");
+    const svcData = svcSheet.getDataRange().getValues();
+    for (let j = 1; j < svcData.length; j++) {
+      if (svcData[j][1] === apptId) {
+        svcSheet.getRange(j + 1, 12).setValue("in_service");
+        break;
+      }
+    }
+    return true;
+  }
+
   // --- AUTO NO SHOW CLEANUP LOGIC ---
   function runAutoNoShowCleanup() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -362,16 +396,13 @@ const AppointmentService = (function () {
       const status = apptData[i][15];
       const apptId = apptData[i][0];
 
-      // If appointment is today or in the past, and arrival time has passed
       if (
         status === "booked" &&
         apptDate <= nowDateStr &&
         apptTime < nowTimeStr
       ) {
-        // Mark Appointment as No Show (Column P)
         apptSheet.getRange(i + 1, 16).setValue("No Show");
 
-        // Mark corresponding Service as no show (Column L in Services)
         for (let j = 1; j < svcData.length; j++) {
           if (svcData[j][1] === apptId) {
             svcSheet.getRange(j + 1, 12).setValue("no show");
@@ -438,7 +469,7 @@ const AppointmentService = (function () {
       .slice(2)
       .map((row) => {
         const timeStr =
-          Object.prototype.toString.call(row[0]) === "[object Date]"
+          row[0] instanceof Date
             ? Utilities.formatDate(row[0], "Asia/Manila", "HH:mm")
             : String(row[0]).trim();
         return {
@@ -455,6 +486,7 @@ const AppointmentService = (function () {
     getRequiredRepairTime,
     updateAppointmentStatus,
     updateSlotCapacities,
-    runAutoNoShowCleanup, // Exported to be called from the frontend
+    runAutoNoShowCleanup,
+    updateStatusToArrived, // Bridge uses this name
   };
 })();

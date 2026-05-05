@@ -135,3 +135,7 @@ function runAutoNoShowCleanup() {
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
+
+function setAppointmentArrived(apptId, punctuality) {
+  return AppointmentService.updateStatusToArrived(apptId, punctuality);
+}
